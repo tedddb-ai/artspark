@@ -3,7 +3,7 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Little Bay Arts & Crafts",
+  title: "ArtSpark — Little Bay Arts & Crafts",
   description: "Turn art project inspiration into classroom-ready lesson plans",
   manifest: "/manifest.json",
   appleWebApp: {
@@ -37,7 +37,7 @@ export default function RootLayout({
             <Link href="/" className="flex items-center gap-2">
               <img src="/logo.png" alt="Little Bay" className="h-10 w-10 rounded-full" />
               <span className="text-lg font-bold text-gray-900" style={{ fontFamily: "marker felt, comic sans ms, cursive" }}>
-                Little Bay
+                ArtSpark
               </span>
             </Link>
             <Link

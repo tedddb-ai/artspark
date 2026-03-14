@@ -16,7 +16,8 @@ interface LessonPlanProps {
   onSave?: () => void;
   onPrint?: () => void;
   onEmail?: () => void;
-  onShare?: () => void;
+  onSharePlan?: () => void;
+  onShareList?: () => void;
   isSaved?: boolean;
 }
 
@@ -27,7 +28,8 @@ export default function LessonPlan({
   onSave,
   onPrint,
   onEmail,
-  onShare,
+  onSharePlan,
+  onShareList,
   isSaved,
 }: LessonPlanProps) {
   return (
@@ -65,12 +67,20 @@ export default function LessonPlan({
             {isSaved ? "Saved!" : "Save"}
           </button>
         )}
-        {onShare && (
+        {onSharePlan && (
           <button
-            onClick={onShare}
-            className="flex-1 rounded-lg bg-blue-500 py-3 text-sm font-semibold text-white transition hover:bg-blue-600"
+            onClick={onSharePlan}
+            className="flex-1 rounded-lg bg-crayon-blue py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
           >
-            Share
+            Share Plan
+          </button>
+        )}
+        {onShareList && (
+          <button
+            onClick={onShareList}
+            className="flex-1 rounded-lg bg-crayon-green py-3 text-sm font-semibold text-white transition hover:bg-green-700"
+          >
+            Shopping List
           </button>
         )}
         {onPrint && (
