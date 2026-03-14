@@ -51,7 +51,9 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
       const data = await res.json();
 
       if (!res.ok) {
+        // If extraction fails, guide user to screenshot instead
         setError(data.error || "Failed to extract image");
+        setMode("upload");
         return;
       }
 
@@ -73,7 +75,7 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
     onGenerate({
       imageBase64: imageDataRef.current.base64,
       mediaType: imageDataRef.current.mediaType,
-      sourceUrl: mode === "url" ? url : undefined,
+      sourceUrl: url || undefined,
       notes: notes || undefined,
     });
   }
