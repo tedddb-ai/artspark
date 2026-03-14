@@ -81,7 +81,39 @@ export default function Home() {
   const [isSaving, setIsSaving] = useState(false);
   const [savedPlanId, setSavedPlanId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isPolishing, setIsPolishing] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
+
+  /** Fire-and-forget event tracking */
+  function trackEvent(planId: string, event: string) {
+    fetch("/api/plans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plan_id: planId, event }),
+    }).catch(() => {});
+  }
+
+  /** Background Opus polish — upgrades the plan silently */
+  async function polishInBackground(draft: LessonPlanData) {
+    setIsPolishing(true);
+    try {
+      const res = await fetch("/api/polish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ draft }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.plan) {
+          setGenerated({ plan: data.plan });
+        }
+      }
+    } catch {
+      // Polish failed — draft stands, no user-facing error
+    } finally {
+      setIsPolishing(false);
+    }
+  }
 
   async function handleGenerate(input: GeneratePayload) {
     setIsGenerating(true);
@@ -112,6 +144,8 @@ export default function Home() {
       setGenerated({ plan: data.plan });
       setSourceUrl(input.sourceUrl);
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+      // Fire Opus polish in background — upgrades the plan silently
+      polishInBackground(data.plan);
     } catch (err) {
       setGenerated(null);
       const raw = err instanceof Error ? err.message : "";
@@ -186,6 +220,7 @@ export default function Home() {
 
   function handleSharePlan() {
     if (!generated) return;
+    if (savedPlanId) trackEvent(savedPlanId, "share_plan");
     doShare(
       `Lesson Plan: ${generated.plan.title}`,
       planToEmailBody(generated.plan, sourceUrl)
@@ -194,6 +229,7 @@ export default function Home() {
 
   function handleShareList() {
     if (!generated) return;
+    if (savedPlanId) trackEvent(savedPlanId, "share_list");
     doShare(
       `Shopping List: ${generated.plan.title}`,
       shoppingListText(generated.plan)
@@ -265,6 +301,12 @@ export default function Home() {
               <h2 className="text-xl font-semibold text-gray-900">
                 Your lesson plan
               </h2>
+              {isPolishing && (
+                <p className="mt-0.5 flex items-center gap-1.5 text-xs text-crayon-blue">
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-crayon-blue border-t-transparent" />
+                  Enhancing with Opus...
+                </p>
+              )}
             </div>
             <Link
               href="/library"

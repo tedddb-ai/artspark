@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { savePlan, getAllPlans, searchPlans, getPlan, deletePlan } from "@/lib/db";
+import { savePlan, getAllPlans, searchPlans, getPlan, deletePlan, trackEvent, type PlanEvent } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -21,7 +21,19 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+
+    // Event tracking: { plan_id, event }
+    if (body.event && body.plan_id) {
+      const validEvents: PlanEvent[] = ["save", "share_plan", "share_list", "print", "delete", "polish"];
+      if (validEvents.includes(body.event)) {
+        await trackEvent(body.plan_id, body.event);
+      }
+      return NextResponse.json({ success: true });
+    }
+
+    // Normal plan save
     await savePlan(body);
+    await trackEvent(body.id, "save");
     return NextResponse.json({ success: true, id: body.id });
   } catch (error) {
     console.error("Save error:", error);

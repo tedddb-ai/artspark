@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateLessonPlan } from "@/lib/claude";
+import { getFrequentMaterials } from "@/lib/db";
 
 export const maxDuration = 60;
 
@@ -29,10 +30,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Inject supply memory: tell Claude what materials the teacher already has
+    let enrichedNotes = notes || "";
+    try {
+      const knownSupplies = await getFrequentMaterials(15);
+      if (knownSupplies.length >= 3) {
+        const supplyNote = `\n\nThis teacher's classroom already has: ${knownSupplies.join(", ")}. Prefer these materials when possible. Only suggest buying new items when the project truly requires something she doesn't have.`;
+        enrichedNotes = (enrichedNotes + supplyNote).trim();
+      }
+    } catch { /* supply memory unavailable — proceed without */ }
+
     const plan = await generateLessonPlan(
       base64,
       mediaType,
-      notes || undefined,
+      enrichedNotes || undefined,
       caption || undefined
     );
 

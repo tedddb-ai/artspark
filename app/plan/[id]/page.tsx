@@ -43,6 +43,12 @@ export default function PlanPage({
   }, [id]);
 
   function handlePrint() {
+    // Track print event (fire-and-forget)
+    fetch("/api/plans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plan_id: id, event: "print" }),
+    }).catch(() => {});
     setShowPrint(true);
     setTimeout(() => window.print(), 200);
     setTimeout(() => setShowPrint(false), 1000);

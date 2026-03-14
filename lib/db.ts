@@ -28,6 +28,14 @@ async function ensureTable() {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS plan_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      plan_id TEXT NOT NULL,
+      event TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 }
 
 // Initialize table on first import
@@ -111,4 +119,60 @@ export async function deletePlan(id: string): Promise<void> {
     sql: "DELETE FROM lesson_plans WHERE id = ?",
     args: [id],
   });
+}
+
+// --- Feedback events ---
+// Events: "save", "share_plan", "share_list", "print", "delete", "polish"
+export type PlanEvent = "save" | "share_plan" | "share_list" | "print" | "delete" | "polish";
+
+/** Fire-and-forget event tracking — never throws */
+export async function trackEvent(planId: string, event: PlanEvent): Promise<void> {
+  try {
+    await tableReady;
+    const db = getDb();
+    await db.execute({
+      sql: "INSERT INTO plan_events (plan_id, event) VALUES (?, ?)",
+      args: [planId, event],
+    });
+  } catch (e) {
+    console.error("Failed to track event:", e);
+  }
+}
+
+/** Get the most common materials from saved+shared plans (positive signal) */
+export async function getFrequentMaterials(limit = 20): Promise<string[]> {
+  try {
+    await tableReady;
+    const db = getDb();
+    // Get plan_json from plans that have positive signals (save, share, print)
+    const result = await db.execute(`
+      SELECT DISTINCT lp.plan_json
+      FROM lesson_plans lp
+      INNER JOIN plan_events pe ON lp.id = pe.plan_id
+      WHERE pe.event IN ('save', 'share_plan', 'share_list', 'print')
+      ORDER BY lp.created_at DESC
+      LIMIT 30
+    `);
+    // Extract material items from JSON blobs
+    const materialCounts = new Map<string, number>();
+    for (const row of result.rows) {
+      try {
+        const plan = JSON.parse(row.plan_json as string);
+        if (Array.isArray(plan.materials)) {
+          for (const m of plan.materials) {
+            if (m.item) {
+              const key = m.item.toLowerCase().trim();
+              materialCounts.set(key, (materialCounts.get(key) || 0) + 1);
+            }
+          }
+        }
+      } catch { /* skip bad JSON */ }
+    }
+    return Array.from(materialCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([item]) => item);
+  } catch {
+    return [];
+  }
 }

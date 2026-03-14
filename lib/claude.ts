@@ -29,6 +29,25 @@ export interface LessonPlanData {
   season_tags: string[];
 }
 
+/** Validate that a parsed object has the required LessonPlanData fields */
+function validatePlan(obj: unknown): obj is LessonPlanData {
+  if (!obj || typeof obj !== "object") return false;
+  const p = obj as Record<string, unknown>;
+  return (
+    typeof p.title === "string" &&
+    typeof p.overview === "string" &&
+    Array.isArray(p.learning_objectives) &&
+    Array.isArray(p.materials) &&
+    typeof p.total_estimated_cost === "string" &&
+    Array.isArray(p.schedule) &&
+    Array.isArray(p.step_by_step_instructions) &&
+    Array.isArray(p.safety_notes) &&
+    p.modifications != null &&
+    typeof p.mess_level === "string" &&
+    Array.isArray(p.tags)
+  );
+}
+
 function getClient(): Anthropic {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -46,6 +65,15 @@ function extractJson(text: string): string {
   return jsonStr;
 }
 
+/** Parse + validate JSON, throw descriptive error on failure */
+function parsePlan(text: string): LessonPlanData {
+  const parsed = JSON.parse(extractJson(text));
+  if (!validatePlan(parsed)) {
+    throw new Error("Response JSON is missing required fields");
+  }
+  return parsed;
+}
+
 /** Sonnet with extended thinking for best one-shot quality */
 export async function generateLessonPlan(
   imageBase64: string,
@@ -54,23 +82,26 @@ export async function generateLessonPlan(
   caption?: string
 ): Promise<LessonPlanData> {
   const anthropic = getClient();
+
+  const messages: Anthropic.MessageParam[] = [
+    {
+      role: "user",
+      content: [
+        {
+          type: "image",
+          source: { type: "base64", media_type: mediaType, data: imageBase64 },
+        },
+        { type: "text", text: buildUserPrompt(notes, caption) },
+      ],
+    },
+  ];
+
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-5-20250929",
     max_tokens: 16000,
     thinking: { type: "enabled", budget_tokens: 4096 },
     system: LESSON_PLAN_SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: { type: "base64", media_type: mediaType, data: imageBase64 },
-          },
-          { type: "text", text: buildUserPrompt(notes, caption) },
-        ],
-      },
-    ],
+    messages,
   });
 
   const textBlock = response.content.find((block) => block.type === "text");
@@ -78,7 +109,27 @@ export async function generateLessonPlan(
     throw new Error("No text response from Claude");
   }
 
-  return JSON.parse(extractJson(textBlock.text)) as LessonPlanData;
+  // Try parsing; on failure, retry once with a JSON-only nudge
+  try {
+    return parsePlan(textBlock.text);
+  } catch (firstError) {
+    console.warn("First parse failed, retrying:", firstError);
+    const retry = await anthropic.messages.create({
+      model: "claude-sonnet-4-5-20250929",
+      max_tokens: 8192,
+      system: LESSON_PLAN_SYSTEM_PROMPT,
+      messages: [
+        ...messages,
+        { role: "assistant", content: textBlock.text },
+        { role: "user", content: "That response was not valid JSON. Please respond with ONLY the valid JSON object, no markdown fences, no explanation." },
+      ],
+    });
+    const retryText = retry.content.find((b) => b.type === "text");
+    if (!retryText || retryText.type !== "text") {
+      throw new Error("No text response on retry");
+    }
+    return parsePlan(retryText.text);
+  }
 }
 
 const POLISH_PROMPT = `You are an expert early childhood art teacher reviewing a lesson plan draft for a class of 15 kids ages 4-6.
@@ -99,14 +150,14 @@ Enhance this lesson plan while keeping the same JSON structure. Focus on:
 
 Return ONLY valid JSON with the exact same schema. Do not add or remove fields.`;
 
-/** Step 2: Opus polishes the draft (deeper, ~15-25s) */
+/** Opus polishes the draft — called separately from client */
 export async function polishLessonPlan(
   draft: LessonPlanData
 ): Promise<LessonPlanData> {
   const anthropic = getClient();
   const response = await anthropic.messages.create({
     model: "claude-opus-4-6",
-    max_tokens: 4096,
+    max_tokens: 8192,
     system: POLISH_PROMPT,
     messages: [
       {
@@ -121,5 +172,11 @@ export async function polishLessonPlan(
     throw new Error("No text response from Claude");
   }
 
-  return JSON.parse(extractJson(textBlock.text)) as LessonPlanData;
+  // Validate polished plan has required fields; if not, return draft unchanged
+  try {
+    return parsePlan(textBlock.text);
+  } catch {
+    console.error("Polish returned invalid JSON, keeping draft");
+    return draft;
+  }
 }
