@@ -36,7 +36,7 @@ export async function generateLessonPlan(
 
   const anthropic = new Anthropic({ apiKey });
   const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-6-20250514",
+    model: "claude-sonnet-4-5-20250514",
     max_tokens: 4096,
     system: LESSON_PLAN_SYSTEM_PROMPT,
     messages: [
