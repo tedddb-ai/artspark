@@ -199,17 +199,17 @@ export async function saveProfile(profile: {
 
 // --- Taste data for recommendation engine ---
 export async function getTasteData(): Promise<{
-  plans: { plan_json: string; mess_level: string | null; tags: string | null; title: string }[];
+  plans: { id: string; plan_json: string; mess_level: string | null; tags: string | null; title: string }[];
   events: { plan_id: string; event: string }[];
 }> {
   await tableReady;
   const db = getDb();
   const [planResult, eventResult] = await Promise.all([
-    db.execute("SELECT plan_json, mess_level, tags, title FROM lesson_plans ORDER BY created_at DESC LIMIT 50"),
+    db.execute("SELECT id, plan_json, mess_level, tags, title FROM lesson_plans ORDER BY created_at DESC LIMIT 50"),
     db.execute("SELECT plan_id, event FROM plan_events ORDER BY created_at DESC LIMIT 200"),
   ]);
   return {
-    plans: planResult.rows as unknown as { plan_json: string; mess_level: string | null; tags: string | null; title: string }[],
+    plans: planResult.rows as unknown as { id: string; plan_json: string; mess_level: string | null; tags: string | null; title: string }[],
     events: eventResult.rows as unknown as { plan_id: string; event: string }[],
   };
 }

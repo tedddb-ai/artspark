@@ -45,7 +45,7 @@ function extractKeywords(text: string, keywords: string[]): string[] {
 }
 
 export function buildTasteProfile(
-  plans: { plan_json: string; mess_level: string | null; tags: string | null; title: string }[],
+  plans: { id: string; plan_json: string; mess_level: string | null; tags: string | null; title: string }[],
   events: { plan_id: string; event: string }[]
 ): TasteProfile {
   // Map plan_id → event counts
@@ -69,7 +69,7 @@ export function buildTasteProfile(
   let negativeTotal = 0;
 
   for (const plan of plans) {
-    const signals = planSignals.get(plan.title) || { positive: 0, negative: 0 };
+    const signals = planSignals.get(plan.id) || { positive: 0, negative: 0 };
     // Weight: +1 for each positive signal, -1 for each negative
     const weight = Math.max(signals.positive - signals.negative, 0);
     // Even plans with no events count as slight positive (they were generated and kept)
