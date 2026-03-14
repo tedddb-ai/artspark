@@ -18,7 +18,10 @@ interface LessonPlanProps {
   onEmail?: () => void;
   onSharePlan?: () => void;
   onShareList?: () => void;
+  onCopyCaption?: () => void;
+  onShowCarousel?: () => void;
   isSaved?: boolean;
+  planId?: string;
 }
 
 export default function LessonPlan({
@@ -30,6 +33,8 @@ export default function LessonPlan({
   onEmail,
   onSharePlan,
   onShareList,
+  onCopyCaption,
+  onShowCarousel,
   isSaved,
 }: LessonPlanProps) {
   return (
@@ -92,6 +97,28 @@ export default function LessonPlan({
           </button>
         )}
       </div>
+
+      {/* Social sharing */}
+      {(onCopyCaption || onShowCarousel) && (
+        <div className="flex gap-2">
+          {onCopyCaption && (
+            <button
+              onClick={onCopyCaption}
+              className="flex-1 rounded-lg bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+            >
+              Copy for Instagram
+            </button>
+          )}
+          {onShowCarousel && (
+            <button
+              onClick={onShowCarousel}
+              className="flex-1 rounded-lg border border-purple-300 bg-purple-50 py-3 text-sm font-semibold text-purple-700 transition hover:bg-purple-100"
+            >
+              Carousel Preview
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Prep Steps */}
       {plan.prep_steps && plan.prep_steps.length > 0 && (

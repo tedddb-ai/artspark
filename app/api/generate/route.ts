@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateLessonPlan } from "@/lib/claude";
-import { getFrequentMaterials } from "@/lib/db";
+import { getProfile, getFrequentMaterials } from "@/lib/db";
 
 export const maxDuration = 60;
 
@@ -30,21 +30,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Inject supply memory: tell Claude what materials the teacher already has
+    // Inject supply context: explicit profile first, fall back to inferred supply memory
     let enrichedNotes = notes || "";
+    let classSize = 15;
     try {
-      const knownSupplies = await getFrequentMaterials(15);
-      if (knownSupplies.length >= 3) {
-        const supplyNote = `\n\nThis teacher's classroom already has: ${knownSupplies.join(", ")}. Prefer these materials when possible. Only suggest buying new items when the project truly requires something she doesn't have.`;
+      const profile = await getProfile();
+      if (profile && profile.supplies.length > 0) {
+        classSize = profile.class_size;
+        const supplyNote = `\n\nThis teacher's classroom already has: ${profile.supplies.join(", ")}. Class size: ${classSize} kids. Prefer these materials when possible. Only suggest buying new items when the project truly requires something not listed.`;
         enrichedNotes = (enrichedNotes + supplyNote).trim();
+      } else {
+        // Fall back to inferred supply memory
+        const knownSupplies = await getFrequentMaterials(15);
+        if (knownSupplies.length >= 3) {
+          const supplyNote = `\n\nThis teacher's classroom already has: ${knownSupplies.join(", ")}. Prefer these materials when possible. Only suggest buying new items when the project truly requires something she doesn't have.`;
+          enrichedNotes = (enrichedNotes + supplyNote).trim();
+        }
       }
-    } catch { /* supply memory unavailable — proceed without */ }
+    } catch { /* supply context unavailable — proceed without */ }
 
     const plan = await generateLessonPlan(
       base64,
       mediaType,
       enrichedNotes || undefined,
-      caption || undefined
+      caption || undefined,
+      classSize
     );
 
     return NextResponse.json({ plan });

@@ -1,4 +1,5 @@
-export const LESSON_PLAN_SYSTEM_PROMPT = `You write lesson plans for a real art teacher running a 60-minute class for 15 kids ages 4-6. The plan must be detailed enough that a substitute teacher could pick it up and run the class cold.
+export function buildSystemPrompt(classSize = 15): string {
+  return `You write lesson plans for a real art teacher running a 60-minute class for ${classSize} kids ages 4-6. The plan must be detailed enough that a substitute teacher could pick it up and run the class cold.
 
 You will be shown an image of an art project or craft. Analyze it and generate a complete lesson plan.
 
@@ -15,7 +16,7 @@ FIELD GUIDELINES:
 - overview: 1-2 sentences a teacher reads to decide if this fits their week. Mention the key technique and what kids will make.
 - learning_objectives: 3-4 specific, measurable objectives. Good: "Practice tearing paper into small pieces." Bad: "Develop creativity." Good: "Identify and name 3 primary colors." Bad: "Learn about colors."
 - prep_steps: 3-6 things the teacher must do BEFORE kids arrive. Be hyper-specific: "Cover 5 tables with newspaper", "Pre-cut 15 circles from white cardstock (6-inch diameter)", "Pour washable paint into cups — one red, one blue, one yellow per table of 3", "Set out smocks at each seat."
-- materials: Every item needed. Quantity for 15 kids + 20% extra. Cost at craft store prices. Tip: where to buy cheaply (Dollar Tree, Amazon bulk, Walmart) OR a substitution that works just as well.
+- materials: Every item needed. Quantity for ${classSize} kids + 20% extra. Cost at craft store prices. Tip: where to buy cheaply (Dollar Tree, Amazon bulk, Walmart) OR a substitution that works just as well.
 - vocabulary: 3-5 real art words kids will hear and use during the lesson. Words like "texture", "symmetry", "collage", "blend", "overlap" — not "fun" or "create."
 - schedule: 5 phases totaling exactly 60 minutes. Each phase gets a teacher_tip: an actual sentence to say out loud, plus a transition cue to move to the next phase. Show & Share gets 3 open-ended discussion questions.
 - step_by_step_instructions: 8-15 steps. One action per step. Written like a recipe a substitute teacher follows literally. Include wait times, drying times, and "while you wait" activities.
@@ -65,9 +66,10 @@ Respond with ONLY valid JSON matching this schema:
 }
 
 Total schedule time must equal 60 minutes. All fields are required.`;
+}
 
-export function buildUserPrompt(notes?: string, caption?: string): string {
-  let prompt = "Analyze this art project image and create a complete 60-minute lesson plan for a class of 15 kids ages 4-6.";
+export function buildUserPrompt(notes?: string, caption?: string, classSize = 15): string {
+  let prompt = `Analyze this art project image and create a complete 60-minute lesson plan for a class of ${classSize} kids ages 4-6.`;
   if (caption) {
     prompt += `\n\nThe original post said: "${caption}"`;
     prompt += "\n\nUse this context to understand the art technique, materials, and intent behind the project.";

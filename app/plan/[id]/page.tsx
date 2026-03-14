@@ -1,92 +1,52 @@
-"use client";
+import type { Metadata } from "next";
+import { getPlan } from "@/lib/db";
+import PlanPageClient from "./PlanPageClient";
 
-import { useState, useEffect, use } from "react";
-import Link from "next/link";
-import LessonPlan from "@/components/LessonPlan";
-import PrintView from "@/components/PrintView";
-import type { LessonPlanData } from "@/lib/claude";
-
-export default function PlanPage({
-  params,
-}: {
+interface Props {
   params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
-  const [plan, setPlan] = useState<LessonPlanData | null>(null);
-  const [sourceUrl, setSourceUrl] = useState<string | undefined>();
-  const [imagePreview, setImagePreview] = useState<string | undefined>();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showPrint, setShowPrint] = useState(false);
+}
 
-  useEffect(() => {
-    async function load() {
-      const res = await fetch(`/api/plans?id=${id}`);
-      if (!res.ok) {
-        setError("Plan not found");
-        setLoading(false);
-        return;
-      }
-      const data = await res.json();
-      setPlan(JSON.parse(data.plan_json));
-      setSourceUrl(data.source_url || undefined);
-      if (data.source_image_base64) {
-        setImagePreview(
-          data.source_image_base64.startsWith("data:")
-            ? data.source_image_base64
-            : `data:image/jpeg;base64,${data.source_image_base64}`
-        );
-      }
-      setLoading(false);
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+
+  let title = "Lesson Plan | ArtSpark";
+  let description = "Turn art inspiration into classroom-ready lesson plans";
+  let ogTitle = title;
+
+  try {
+    const saved = await getPlan(id);
+    if (saved) {
+      const plan = JSON.parse(saved.plan_json);
+      title = `${plan.title} | ArtSpark`;
+      ogTitle = plan.title;
+      description =
+        plan.overview?.slice(0, 160) || description;
     }
-    load();
-  }, [id]);
-
-  function handlePrint() {
-    // Track print event (fire-and-forget)
-    fetch("/api/plans", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan_id: id, event: "print" }),
-    }).catch(() => {});
-    setShowPrint(true);
-    setTimeout(() => window.print(), 200);
-    setTimeout(() => setShowPrint(false), 1000);
+  } catch {
+    // Use defaults
   }
 
-  if (loading) {
-    return <div className="py-12 text-center text-gray-500">Loading...</div>;
-  }
+  const ogImageUrl = `/api/og/${id}`;
 
-  if (error || !plan) {
-    return (
-      <div className="py-12 text-center text-red-500">
-        {error || "Plan not found"}
-      </div>
-    );
-  }
+  return {
+    title,
+    description,
+    openGraph: {
+      title: ogTitle,
+      description,
+      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: ogTitle,
+      description,
+      images: [ogImageUrl],
+    },
+  };
+}
 
-  if (showPrint) {
-    return <PrintView plan={plan} sourceUrl={sourceUrl} planId={id} />;
-  }
-
-  return (
-    <div className="space-y-4">
-      <Link
-        href="/library"
-        className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 transition hover:text-gray-900"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-          <path fillRule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clipRule="evenodd" />
-        </svg>
-        Back to Library
-      </Link>
-      <LessonPlan
-        plan={plan}
-        sourceUrl={sourceUrl}
-        imagePreview={imagePreview}
-        onPrint={handlePrint}
-      />
-    </div>
-  );
+export default async function PlanPage({ params }: Props) {
+  const { id } = await params;
+  return <PlanPageClient id={id} />;
 }

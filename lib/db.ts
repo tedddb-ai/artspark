@@ -36,6 +36,16 @@ async function ensureTable() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS user_profile (
+      id TEXT PRIMARY KEY DEFAULT 'default',
+      supplies TEXT,
+      class_size INTEGER DEFAULT 15,
+      age_range TEXT DEFAULT '4-6',
+      school_name TEXT,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 }
 
 // Initialize table on first import
@@ -137,6 +147,54 @@ export async function trackEvent(planId: string, event: PlanEvent): Promise<void
   } catch (e) {
     console.error("Failed to track event:", e);
   }
+}
+
+// --- User Profile ---
+export interface UserProfile {
+  supplies: string[];
+  class_size: number;
+  age_range: string;
+  school_name: string | null;
+}
+
+export async function getProfile(): Promise<UserProfile | null> {
+  try {
+    await tableReady;
+    const db = getDb();
+    const result = await db.execute(
+      "SELECT * FROM user_profile WHERE id = 'default'"
+    );
+    if (!result.rows[0]) return null;
+    const row = result.rows[0];
+    return {
+      supplies: row.supplies ? JSON.parse(row.supplies as string) : [],
+      class_size: (row.class_size as number) || 15,
+      age_range: (row.age_range as string) || "4-6",
+      school_name: (row.school_name as string) || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function saveProfile(profile: {
+  supplies: string[];
+  class_size: number;
+  age_range?: string;
+  school_name?: string;
+}): Promise<void> {
+  await tableReady;
+  const db = getDb();
+  await db.execute({
+    sql: `INSERT OR REPLACE INTO user_profile (id, supplies, class_size, age_range, school_name, updated_at)
+          VALUES ('default', ?, ?, ?, ?, datetime('now'))`,
+    args: [
+      JSON.stringify(profile.supplies),
+      profile.class_size,
+      profile.age_range || "4-6",
+      profile.school_name || null,
+    ],
+  });
 }
 
 /** Get the most common materials from saved+shared plans (positive signal) */

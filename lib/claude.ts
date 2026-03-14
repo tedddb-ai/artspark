@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { LESSON_PLAN_SYSTEM_PROMPT, buildUserPrompt } from "./prompts";
+import { buildSystemPrompt, buildUserPrompt } from "./prompts";
 
 export interface LessonPlanData {
   title: string;
@@ -79,9 +79,11 @@ export async function generateLessonPlan(
   imageBase64: string,
   mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp",
   notes?: string,
-  caption?: string
+  caption?: string,
+  classSize?: number
 ): Promise<LessonPlanData> {
   const anthropic = getClient();
+  const systemPrompt = buildSystemPrompt(classSize);
 
   const messages: Anthropic.MessageParam[] = [
     {
@@ -91,7 +93,7 @@ export async function generateLessonPlan(
           type: "image",
           source: { type: "base64", media_type: mediaType, data: imageBase64 },
         },
-        { type: "text", text: buildUserPrompt(notes, caption) },
+        { type: "text", text: buildUserPrompt(notes, caption, classSize) },
       ],
     },
   ];
@@ -100,7 +102,7 @@ export async function generateLessonPlan(
     model: "claude-sonnet-4-5-20250929",
     max_tokens: 16000,
     thinking: { type: "enabled", budget_tokens: 4096 },
-    system: LESSON_PLAN_SYSTEM_PROMPT,
+    system: systemPrompt,
     messages,
   });
 
@@ -117,7 +119,7 @@ export async function generateLessonPlan(
     const retry = await anthropic.messages.create({
       model: "claude-sonnet-4-5-20250929",
       max_tokens: 8192,
-      system: LESSON_PLAN_SYSTEM_PROMPT,
+      system: systemPrompt,
       messages: [
         ...messages,
         { role: "assistant", content: textBlock.text },
