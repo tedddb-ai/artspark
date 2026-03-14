@@ -85,7 +85,7 @@ export default function LibraryPage() {
           setSearch(e.target.value);
         }}
         placeholder="Search by title, materials, or theme..."
-        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400"
+        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-crayon-red focus:outline-none focus:ring-1 focus:ring-crayon-red"
       />
 
       {/* Filters */}
@@ -96,7 +96,7 @@ export default function LibraryPage() {
             onClick={() => setMessFilter(level)}
             className={`rounded-full px-3 py-1 text-xs font-medium transition ${
               messFilter === level
-                ? "bg-orange-500 text-white"
+                ? "bg-crayon-red text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >

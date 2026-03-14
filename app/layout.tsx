@@ -3,18 +3,18 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ArtSpark",
+  title: "Little Bay Arts & Crafts",
   description: "Turn art project inspiration into classroom-ready lesson plans",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "ArtSpark",
+    title: "Little Bay",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f97316",
+  themeColor: "#C1272D",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -28,18 +28,21 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="apple-touch-icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/logo.png" />
       </head>
-      <body className="bg-white antialiased">
+      <body className="bg-cream antialiased">
         {/* Nav */}
-        <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur">
-          <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3">
-            <Link href="/" className="text-xl font-bold text-orange-500">
-              ArtSpark
+        <header className="sticky top-0 z-50 border-b border-amber-100 bg-cream/90 backdrop-blur">
+          <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-2">
+            <Link href="/" className="flex items-center gap-2">
+              <img src="/logo.png" alt="Little Bay" className="h-10 w-10 rounded-full" />
+              <span className="text-lg font-bold text-gray-900" style={{ fontFamily: "marker felt, comic sans ms, cursive" }}>
+                Little Bay
+              </span>
             </Link>
             <Link
               href="/library"
-              className="rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
+              className="rounded-full bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 transition hover:bg-amber-100"
             >
               Library
             </Link>

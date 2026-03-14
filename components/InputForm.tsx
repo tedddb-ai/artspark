@@ -117,7 +117,7 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
       {mode === "upload" && (
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="cursor-pointer rounded-xl border-2 border-dashed border-gray-300 p-8 text-center transition hover:border-orange-400 hover:bg-orange-50"
+          className="cursor-pointer rounded-xl border-2 border-dashed border-gray-300 p-8 text-center transition hover:border-crayon-red hover:bg-amber-50"
         >
           {preview ? (
             <img
@@ -156,7 +156,7 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="Paste Instagram, Pinterest, or TikTok URL..."
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400"
+              className="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-crayon-red focus:outline-none focus:ring-1 focus:ring-crayon-red"
             />
             <button
               type="button"
@@ -183,7 +183,7 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
         onChange={(e) => setNotes(e.target.value)}
         placeholder='Optional: "Focus on color mixing" or "Use only recycled materials"...'
         rows={2}
-        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400 resize-none"
+        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-crayon-red focus:outline-none focus:ring-1 focus:ring-crayon-red resize-none"
       />
 
       {/* Error */}
@@ -195,7 +195,7 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
       <button
         type="submit"
         disabled={isLoading || !hasImage}
-        className="w-full rounded-xl bg-orange-500 py-4 text-lg font-bold text-white transition hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full rounded-xl bg-crayon-red py-4 text-lg font-bold text-white transition hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">

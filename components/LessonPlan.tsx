@@ -60,7 +60,7 @@ export default function LessonPlan({
           <button
             onClick={onSave}
             disabled={isSaved}
-            className="flex-1 rounded-lg bg-orange-500 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:bg-green-500"
+            className="flex-1 rounded-lg bg-crayon-red py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:bg-green-500"
           >
             {isSaved ? "Saved!" : "Save"}
           </button>
@@ -91,7 +91,7 @@ export default function LessonPlan({
         <ul className="space-y-1">
           {plan.learning_objectives.map((obj, i) => (
             <li key={i} className="flex gap-2 text-sm text-gray-700">
-              <span className="text-orange-500 mt-0.5">&#9679;</span>
+              <span className="text-crayon-red mt-0.5">&#9679;</span>
               {obj}
             </li>
           ))}
@@ -139,7 +139,7 @@ export default function LessonPlan({
         <ol className="space-y-2">
           {plan.step_by_step_instructions.map((step, i) => (
             <li key={i} className="flex gap-3 text-sm text-gray-700">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-600">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-crayon-red">
                 {i + 1}
               </span>
               <span className="pt-0.5">{step}</span>
@@ -207,7 +207,7 @@ export default function LessonPlan({
         {plan.season_tags?.map((tag) => (
           <span
             key={tag}
-            className="rounded-full bg-orange-100 px-3 py-1 text-xs text-orange-600"
+            className="rounded-full bg-amber-100 px-3 py-1 text-xs text-crayon-red"
           >
             {tag}
           </span>

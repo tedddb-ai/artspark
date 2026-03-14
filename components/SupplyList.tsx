@@ -14,7 +14,7 @@ export default function SupplyList({ materials, totalCost }: SupplyListProps) {
             <div className="flex items-center gap-3">
               <input
                 type="checkbox"
-                className="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400"
+                className="h-4 w-4 rounded border-gray-300 text-crayon-red focus:ring-crayon-red"
               />
               <span className="text-sm text-gray-800">{mat.item}</span>
             </div>

@@ -46,7 +46,7 @@ export default function LibraryCard({
       <div className="p-4">
         <div className="flex items-start justify-between">
           <Link href={`/plan/${id}`} className="block flex-1">
-            <h3 className="font-semibold text-gray-900 hover:text-orange-600 transition">
+            <h3 className="font-semibold text-gray-900 hover:text-crayon-red transition">
               {title}
             </h3>
           </Link>
@@ -75,7 +75,7 @@ export default function LibraryCard({
         <div className="mt-3 flex gap-2">
           <Link
             href={`/plan/${id}`}
-            className="flex-1 rounded-lg bg-orange-50 py-2 text-center text-xs font-medium text-orange-600 transition hover:bg-orange-100"
+            className="flex-1 rounded-lg bg-amber-50 py-2 text-center text-xs font-medium text-crayon-red transition hover:bg-amber-100"
           >
             View
           </Link>

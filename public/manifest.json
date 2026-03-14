@@ -1,22 +1,17 @@
 {
-  "name": "ArtSpark",
-  "short_name": "ArtSpark",
+  "name": "Little Bay Arts & Crafts",
+  "short_name": "Little Bay",
   "description": "Turn art project inspiration into classroom-ready lesson plans",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#f97316",
+  "background_color": "#FFF8E7",
+  "theme_color": "#C1272D",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/favicon.ico",
+      "src": "/logo.png",
       "sizes": "any",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "/favicon.ico",
-      "sizes": "any",
-      "type": "image/x-icon"
+      "type": "image/png"
     }
   ]
 }
