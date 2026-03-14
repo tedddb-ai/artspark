@@ -36,6 +36,7 @@ export default function LessonPlan({
   onCopyCaption,
   onShowCarousel,
   isSaved,
+  planId,
 }: LessonPlanProps) {
   return (
     <div className="space-y-6">
@@ -99,7 +100,7 @@ export default function LessonPlan({
       </div>
 
       {/* Social sharing */}
-      {(onCopyCaption || onShowCarousel) && (
+      {(onCopyCaption || onShowCarousel || planId) && (
         <div className="flex gap-2">
           {onCopyCaption && (
             <button
@@ -114,8 +115,18 @@ export default function LessonPlan({
               onClick={onShowCarousel}
               className="flex-1 rounded-lg border border-purple-300 bg-purple-50 py-3 text-sm font-semibold text-purple-700 transition hover:bg-purple-100"
             >
-              Carousel Preview
+              Carousel
             </button>
+          )}
+          {planId && (
+            <a
+              href={`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(`https://artspark-alpha.vercel.app/plan/${planId}`)}&description=${encodeURIComponent(`${plan.title} — Free art lesson plan for kids ages 4-6. 60 min, ${plan.mess_level} mess, ${plan.total_estimated_cost}. Full instructions + shopping list.`)}&media=${encodeURIComponent(`https://artspark-alpha.vercel.app/api/og/${planId}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center rounded-lg bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-700"
+            >
+              Pin
+            </a>
           )}
         </div>
       )}

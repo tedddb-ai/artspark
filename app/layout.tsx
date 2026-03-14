@@ -43,6 +43,12 @@ export default function RootLayout({
             </Link>
             <div className="flex items-center gap-2">
               <Link
+                href="/gallery"
+                className="rounded-full bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 transition hover:bg-amber-100"
+              >
+                Gallery
+              </Link>
+              <Link
                 href="/library"
                 className="rounded-full bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 transition hover:bg-amber-100"
               >
