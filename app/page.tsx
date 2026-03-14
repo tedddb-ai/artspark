@@ -26,6 +26,8 @@ export default function Home() {
   const [generated, setGenerated] = useState<GeneratedResult | null>(null);
   const [sourceUrl, setSourceUrl] = useState<string | undefined>();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isPolishing, setIsPolishing] = useState(false);
+  const [polishStatus, setPolishStatus] = useState<"idle" | "polishing" | "done" | "failed">("idle");
   const [isSaving, setIsSaving] = useState(false);
   const [savedPlanId, setSavedPlanId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +36,7 @@ export default function Home() {
     setIsGenerating(true);
     setError(null);
     setSavedPlanId(null);
+    setPolishStatus("idle");
 
     try {
       const formData = new FormData();
@@ -51,12 +54,16 @@ export default function Home() {
         throw new Error(data.error || "Failed to generate lesson plan");
       }
 
-      setGenerated({
+      const result: GeneratedResult = {
         plan: data.plan,
         imageBase64: data.imageBase64,
         mediaType: data.mediaType,
-      });
+      };
+      setGenerated(result);
       setSourceUrl(input.sourceUrl);
+
+      // Auto-fire Opus polish in background
+      polishPlan(result);
     } catch (err) {
       setGenerated(null);
       setError(
@@ -64,6 +71,35 @@ export default function Home() {
       );
     } finally {
       setIsGenerating(false);
+    }
+  }
+
+  async function polishPlan(result: GeneratedResult) {
+    setIsPolishing(true);
+    setPolishStatus("polishing");
+
+    try {
+      const res = await fetch("/api/polish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ draft: result.plan }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error("Polish failed:", data.error);
+        setPolishStatus("failed");
+        return;
+      }
+
+      setGenerated((prev) =>
+        prev ? { ...prev, plan: data.plan } : null
+      );
+      setPolishStatus("done");
+    } catch {
+      setPolishStatus("failed");
+    } finally {
+      setIsPolishing(false);
     }
   }
 
@@ -181,10 +217,27 @@ export default function Home() {
             </Link>
           </div>
 
+          {/* Polish status banner */}
+          {polishStatus === "polishing" && (
+            <div className="rounded-2xl border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-700 flex items-center gap-2">
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
+              Opus is enhancing your lesson plan...
+            </div>
+          )}
+          {polishStatus === "done" && (
+            <div className="rounded-2xl border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-700">
+              Enhanced by Opus — instructions sharpened, safety notes refined, costs verified.
+            </div>
+          )}
+          {polishStatus === "failed" && (
+            <div className="rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-700">
+              Enhancement unavailable — showing Sonnet draft (still great!).
+            </div>
+          )}
+
           {savedPlanId ? (
             <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-              Lesson plan saved.
-              {" "}
+              Lesson plan saved.{" "}
               <button
                 type="button"
                 onClick={handleOpenSavedPlan}
