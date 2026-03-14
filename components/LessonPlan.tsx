@@ -15,6 +15,8 @@ interface LessonPlanProps {
   imagePreview?: string;
   onSave?: () => void;
   onPrint?: () => void;
+  onEmail?: () => void;
+  onShare?: () => void;
   isSaved?: boolean;
 }
 
@@ -24,6 +26,8 @@ export default function LessonPlan({
   imagePreview,
   onSave,
   onPrint,
+  onEmail,
+  onShare,
   isSaved,
 }: LessonPlanProps) {
   return (
@@ -51,14 +55,22 @@ export default function LessonPlan({
       )}
 
       {/* Action Buttons */}
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         {onSave && (
           <button
             onClick={onSave}
             disabled={isSaved}
             className="flex-1 rounded-lg bg-orange-500 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:bg-green-500"
           >
-            {isSaved ? "Saved!" : "Save to Library"}
+            {isSaved ? "Saved!" : "Save"}
+          </button>
+        )}
+        {onShare && (
+          <button
+            onClick={onShare}
+            className="flex-1 rounded-lg bg-blue-500 py-3 text-sm font-semibold text-white transition hover:bg-blue-600"
+          >
+            Share
           </button>
         )}
         {onPrint && (

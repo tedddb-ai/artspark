@@ -52,22 +52,20 @@ export async function savePlan(plan: {
   overview: string;
   plan_json: string;
   source_url?: string;
-  source_image_base64?: string;
   mess_level: string;
   tags: string;
 }): Promise<void> {
   await tableReady;
   const db = getDb();
   await db.execute({
-    sql: `INSERT OR REPLACE INTO lesson_plans (id, title, overview, plan_json, source_url, source_image_base64, mess_level, tags, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+    sql: `INSERT OR REPLACE INTO lesson_plans (id, title, overview, plan_json, source_url, mess_level, tags, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
     args: [
       plan.id,
       plan.title,
       plan.overview,
       plan.plan_json,
       plan.source_url || null,
-      plan.source_image_base64 || null,
       plan.mess_level,
       plan.tags,
     ],
