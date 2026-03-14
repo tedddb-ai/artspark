@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import LibraryCard from "@/components/LibraryCard";
 
 interface PlanSummary {
@@ -109,14 +110,20 @@ export default function LibraryPage() {
 
       {/* Results */}
       {loading ? (
-        <div className="text-center py-12 text-gray-400">Loading...</div>
+        <div className="text-center py-12 text-gray-600">Loading...</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-4xl mb-2">🎨</div>
-          <p className="text-gray-500">No lesson plans yet</p>
-          <p className="text-sm text-gray-400 mt-1">
+          <p className="text-gray-600">No lesson plans yet</p>
+          <p className="text-sm text-gray-600 mt-1">
             Generate your first plan from the home page!
           </p>
+          <Link
+            href="/"
+            className="mt-4 inline-block rounded-xl bg-crayon-red px-6 py-3 text-sm font-bold text-white transition hover:bg-red-700"
+          >
+            Create Your First Plan
+          </Link>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">

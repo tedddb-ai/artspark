@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 interface InputFormProps {
   onGenerate: (data: {
@@ -25,18 +25,70 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<File | null>(null);
   const extractedDataRef = useRef<{ base64: string; mediaType: string; caption?: string } | null>(null);
+  const [loadingPhase, setLoadingPhase] = useState(0);
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+  useEffect(() => {
+    if (!isLoading) { setLoadingPhase(0); return; }
+    setLoadingPhase(0);
+    const t1 = setTimeout(() => setLoadingPhase(1), 3000);
+    const t2 = setTimeout(() => setLoadingPhase(2), 8000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [isLoading]);
+
+  const loadingMessages = [
+    "Analyzing your photo...",
+    "Building your lesson plan...",
+    "Adding finishing touches...",
+  ];
+
+  function compressImage(file: File): Promise<File> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX_DIM = 1024;
+        let { width, height } = img;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          const scale = MAX_DIM / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { resolve(file); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) { resolve(file); return; }
+            resolve(new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }));
+          },
+          "image/jpeg",
+          0.8
+        );
+      };
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setError(null);
-    fileRef.current = file;
     extractedDataRef.current = null;
-    setHasImage(true);
 
-    // Show preview
-    const objectUrl = URL.createObjectURL(file);
-    setPreview(objectUrl);
+    try {
+      const compressed = await compressImage(file);
+      fileRef.current = compressed;
+      setHasImage(true);
+      const objectUrl = URL.createObjectURL(compressed);
+      setPreview(objectUrl);
+    } catch {
+      fileRef.current = file;
+      setHasImage(true);
+      setPreview(URL.createObjectURL(file));
+    }
   }
 
   async function handleExtractUrl() {
@@ -131,7 +183,7 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
               <p className="text-gray-600 font-medium">
                 Tap to take a photo or choose from camera roll
               </p>
-              <p className="text-gray-400 text-sm mt-1">
+              <p className="text-gray-500 text-sm mt-1">
                 JPG, PNG, or WebP
               </p>
             </div>
@@ -164,7 +216,12 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
               disabled={extracting || !url.trim()}
               className="rounded-lg bg-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-300 disabled:opacity-50"
             >
-              {extracting ? "..." : "Get"}
+              {extracting ? (
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent" />
+                Extracting
+              </span>
+            ) : "Get"}
             </button>
           </div>
           {preview && (
@@ -181,7 +238,7 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        placeholder='Optional: "Focus on color mixing" or "Use only recycled materials"...'
+        placeholder="Optional: e.g., 'We only have washable markers' or 'Make it easier for 4-year-olds'"
         rows={2}
         className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-crayon-red focus:outline-none focus:ring-1 focus:ring-crayon-red resize-none"
       />
@@ -200,7 +257,7 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">
             <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-            Generating Lesson Plan...
+            {loadingMessages[loadingPhase]}
           </span>
         ) : (
           "Generate Lesson Plan"

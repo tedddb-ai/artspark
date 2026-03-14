@@ -33,11 +33,7 @@ export async function POST(request: NextRequest) {
     const combinedNotes = [caption, notes].filter(Boolean).join("\n\nTeacher's notes: ");
     const plan = await generateLessonPlan(base64, mediaType, combinedNotes || undefined);
 
-    return NextResponse.json({
-      plan,
-      imageBase64: base64,
-      mediaType,
-    });
+    return NextResponse.json({ plan });
   } catch (error) {
     console.error("Generate error:", error);
     return NextResponse.json(

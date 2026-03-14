@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -35,7 +36,7 @@ export default function RootLayout({
         <header className="sticky top-0 z-50 border-b border-amber-100 bg-cream/90 backdrop-blur">
           <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-2">
             <Link href="/" className="flex items-center gap-2">
-              <img src="/logo.png" alt="Little Bay" className="h-10 w-10 rounded-full" />
+              <Image src="/logo.png" alt="Little Bay" width={40} height={40} className="h-10 w-auto rounded-full" />
               <span className="text-lg font-bold text-gray-900" style={{ fontFamily: "marker felt, comic sans ms, cursive" }}>
                 ArtSpark
               </span>

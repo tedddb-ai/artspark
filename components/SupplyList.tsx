@@ -1,7 +1,7 @@
 "use client";
 
 interface SupplyListProps {
-  materials: { item: string; quantity: string; estimated_cost: string }[];
+  materials: { item: string; quantity: string; estimated_cost: string; tip?: string }[];
   totalCost: string;
 }
 
@@ -16,9 +16,14 @@ export default function SupplyList({ materials, totalCost }: SupplyListProps) {
                 type="checkbox"
                 className="h-4 w-4 rounded border-gray-300 text-crayon-red focus:ring-crayon-red"
               />
-              <span className="text-sm text-gray-800">{mat.item}</span>
+              <div>
+                <span className="text-sm text-gray-800">{mat.item}</span>
+                {mat.tip && (
+                  <p className="text-xs text-gray-500">{mat.tip}</p>
+                )}
+              </div>
             </div>
-            <div className="flex gap-4 text-xs text-gray-500">
+            <div className="flex gap-4 text-xs text-gray-600">
               <span>{mat.quantity}</span>
               <span className="w-12 text-right">{mat.estimated_cost}</span>
             </div>

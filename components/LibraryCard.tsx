@@ -57,20 +57,20 @@ export default function LibraryCard({
           )}
         </div>
         {overview && (
-          <p className="mt-1 text-sm text-gray-500 line-clamp-2">{overview}</p>
+          <p className="mt-1 text-sm text-gray-600 line-clamp-2">{overview}</p>
         )}
         <div className="mt-3 flex items-center justify-between">
           <div className="flex flex-wrap gap-1">
             {tagList.slice(0, 3).map((tag) => (
               <span
                 key={tag}
-                className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500"
+                className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
               >
                 {tag}
               </span>
             ))}
           </div>
-          <span className="text-xs text-gray-400">{date}</span>
+          <span className="text-xs text-gray-500">{date}</span>
         </div>
         <div className="mt-3 flex gap-2">
           <Link

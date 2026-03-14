@@ -38,7 +38,7 @@ export default function LessonPlan({
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900">{plan.title}</h2>
         <p className="mt-1 text-gray-600">{plan.overview}</p>
-        <div className="mt-2 flex items-center justify-center gap-3 text-sm text-gray-500">
+        <div className="mt-2 flex items-center justify-center gap-3 text-sm text-gray-600">
           <span>
             {MESS_EMOJI[plan.mess_level] || "🟡"} {plan.mess_level} mess
           </span>
@@ -93,6 +93,44 @@ export default function LessonPlan({
         )}
       </div>
 
+      {/* Prep Steps */}
+      {plan.prep_steps && plan.prep_steps.length > 0 && (
+        <section className="rounded-lg bg-amber-50 p-4">
+          <h3 className="text-lg font-semibold text-amber-900 mb-2">
+            Before Class Starts
+          </h3>
+          <ol className="space-y-1.5">
+            {plan.prep_steps.map((step, i) => (
+              <li key={i} className="flex gap-2 text-sm text-amber-800">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-xs font-bold text-amber-900">
+                  {i + 1}
+                </span>
+                <span className="pt-0.5">{step}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      {/* Vocabulary */}
+      {plan.vocabulary && plan.vocabulary.length > 0 && (
+        <section>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Art Words to Use
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {plan.vocabulary.map((word) => (
+              <span
+                key={word}
+                className="rounded-full bg-crayon-blue/10 px-3 py-1 text-sm font-medium text-crayon-blue"
+              >
+                {word}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Learning Objectives */}
       <section>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -123,11 +161,28 @@ export default function LessonPlan({
                 <span className="font-medium text-gray-900 text-sm">
                   {phase.phase}
                 </span>
-                <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded-full">
+                <span className="text-xs text-gray-600 bg-white px-2 py-0.5 rounded-full">
                   {phase.duration_minutes} min
                 </span>
               </div>
               <p className="text-sm text-gray-600">{phase.description}</p>
+              {phase.teacher_tip && (
+                <p className="mt-2 text-sm italic text-crayon-blue border-l-2 border-crayon-blue/30 pl-3">
+                  {phase.teacher_tip}
+                </p>
+              )}
+              {phase.discussion_questions && phase.discussion_questions.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs font-semibold text-gray-700">Ask the class:</p>
+                  <ul className="space-y-0.5">
+                    {phase.discussion_questions.map((q, qi) => (
+                      <li key={qi} className="text-sm text-gray-600 pl-3">
+                        &bull; {q}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -204,6 +259,16 @@ export default function LessonPlan({
         </div>
       </section>
 
+      {/* Parent Note */}
+      {plan.parent_note && (
+        <section className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+          <h3 className="text-sm font-semibold text-amber-900 mb-1">
+            Note for Parents
+          </h3>
+          <p className="text-sm text-amber-800">{plan.parent_note}</p>
+        </section>
+      )}
+
       {/* Tags */}
       <div className="flex flex-wrap gap-2">
         {plan.tags.map((tag) => (
@@ -226,7 +291,7 @@ export default function LessonPlan({
 
       {/* Source */}
       {sourceUrl && (
-        <p className="text-center text-xs text-gray-400">
+        <p className="text-center text-xs text-gray-500">
           Inspired by:{" "}
           <a
             href={sourceUrl}
