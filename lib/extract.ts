@@ -5,59 +5,117 @@ function isInstagramUrl(url: string): boolean {
   return /instagram\.com\/(p|reel|reels|tv)\//i.test(url);
 }
 
-function normalizeInstagramUrl(url: string): string {
-  const u = new URL(url);
-  u.search = "";
-  let path = u.pathname;
-  if (!path.endsWith("/")) path += "/";
-  return `https://www.instagram.com${path}`;
+/** Extract the shortcode and type from an Instagram URL */
+function parseInstagramUrl(url: string): { type: string; shortcode: string } | null {
+  const match = url.match(/instagram\.com\/(p|reel|reels|tv)\/([A-Za-z0-9_-]+)/i);
+  if (!match) return null;
+  const type = match[1].toLowerCase() === "reels" ? "reel" : match[1].toLowerCase();
+  return { type, shortcode: match[2] };
 }
 
 async function extractFromInstagram(
   url: string
 ): Promise<{ imageUrl: string | null; error?: string }> {
-  const cleanUrl = normalizeInstagramUrl(url);
-
-  const appId = process.env.FACEBOOK_APP_ID;
-  const clientToken = process.env.FACEBOOK_CLIENT_TOKEN;
-
-  if (!appId || !clientToken) {
-    return {
-      imageUrl: null,
-      error: "Instagram integration not configured. FACEBOOK_APP_ID and FACEBOOK_CLIENT_TOKEN required.",
-    };
+  const parsed = parseInstagramUrl(url);
+  if (!parsed) {
+    return { imageUrl: null, error: "Could not parse Instagram URL" };
   }
 
-  // Facebook Graph API oEmbed — the only reliable server-side approach
-  // Works for posts, reels, IGTV, all public Instagram content
+  // Strategy 1: Fetch the /embed/ page — lightweight, no auth needed
+  // Instagram serves a simpler HTML page for embeds that contains the image
   try {
-    const accessToken = `${appId}|${clientToken}`;
-    const oembedUrl = `https://graph.facebook.com/v22.0/instagram_oembed?url=${encodeURIComponent(cleanUrl)}&maxwidth=1080&access_token=${accessToken}`;
-    const res = await fetch(oembedUrl);
+    const embedUrl = `https://www.instagram.com/${parsed.type}/${parsed.shortcode}/embed/`;
+    const res = await fetch(embedUrl, {
+      headers: {
+        "User-Agent": BROWSER_UA,
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+      redirect: "follow",
+    });
 
     if (res.ok) {
-      const data = await res.json();
-      if (data.thumbnail_url) {
-        return { imageUrl: data.thumbnail_url };
+      const html = await res.text();
+
+      // The embed page has images in various places — try them all
+      // 1. og:image meta tag
+      const ogMatch =
+        html.match(/<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']+)["']/i) ||
+        html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']og:image["']/i);
+      if (ogMatch) {
+        return { imageUrl: ogMatch[1] };
       }
-      // oEmbed returned but no thumbnail — try parsing the HTML embed
-      if (data.html) {
-        const imgMatch = data.html.match(/src=["']([^"']+)["']/);
-        if (imgMatch) {
-          return { imageUrl: imgMatch[1] };
-        }
+
+      // 2. Image in the embed markup (class="EmbeddedMediaImage" or similar)
+      const imgMatch =
+        html.match(/class="EmbeddedMediaImage"[^>]*src="([^"]+)"/i) ||
+        html.match(/class="[^"]*"[^>]*src="(https:\/\/[^"]*scontent[^"]*cdninstagram[^"]+)"/i) ||
+        html.match(/src="(https:\/\/[^"]*cdninstagram\.com[^"]+)"/i) ||
+        html.match(/src="(https:\/\/scontent[^"]+)"/i);
+      if (imgMatch) {
+        return { imageUrl: imgMatch[1].replace(/&amp;/g, "&") };
       }
-    } else {
-      const err = await res.json().catch(() => null);
-      console.error("Instagram oEmbed error:", err);
+
+      // 3. Background image in style attributes
+      const bgMatch = html.match(/background-image:\s*url\(["']?(https:\/\/[^"')]+)["']?\)/i);
+      if (bgMatch) {
+        return { imageUrl: bgMatch[1].replace(/&amp;/g, "&") };
+      }
+
+      // 4. Any Instagram CDN image URL in the page
+      const cdnMatch = html.match(/(https:\/\/(?:scontent|instagram)[^"'\s\\]+\.(?:jpg|jpeg|png|webp)[^"'\s\\]*)/i);
+      if (cdnMatch) {
+        return { imageUrl: cdnMatch[1].replace(/\\u0026/g, "&").replace(/&amp;/g, "&") };
+      }
     }
   } catch (e) {
-    console.error("Instagram oEmbed fetch failed:", e);
+    console.error("Instagram embed fetch failed:", e);
+  }
+
+  // Strategy 2: Try the /media/ redirect endpoint (works for posts, not always reels)
+  if (parsed.type === "p") {
+    try {
+      const mediaUrl = `https://www.instagram.com/p/${parsed.shortcode}/media/?size=l`;
+      const res = await fetch(mediaUrl, {
+        headers: { "User-Agent": BROWSER_UA },
+        redirect: "manual",
+      });
+      const location = res.headers.get("location");
+      if (location && location.includes("cdninstagram")) {
+        return { imageUrl: location };
+      }
+    } catch {
+      // media redirect failed
+    }
+  }
+
+  // Strategy 3: Direct page fetch with mobile UA
+  try {
+    const cleanUrl = `https://www.instagram.com/${parsed.type}/${parsed.shortcode}/`;
+    const res = await fetch(cleanUrl, {
+      headers: {
+        "User-Agent": BROWSER_UA,
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+      redirect: "follow",
+    });
+    if (res.ok) {
+      const html = await res.text();
+      const ogMatch =
+        html.match(/<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']+)["']/i) ||
+        html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']og:image["']/i);
+      if (ogMatch) {
+        return { imageUrl: ogMatch[1] };
+      }
+    }
+  } catch {
+    // direct fetch failed
   }
 
   return {
     imageUrl: null,
-    error: "Couldn't extract this Instagram post. It may be private or restricted.",
+    error: "Couldn't extract this Instagram post. Try screenshotting it and uploading instead.",
   };
 }
 
@@ -68,49 +126,28 @@ async function extractFromGenericUrl(
     const response = await fetch(url, {
       headers: {
         "User-Agent": BROWSER_UA,
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       },
       redirect: "follow",
     });
 
     if (!response.ok) {
-      return {
-        imageUrl: null,
-        error: `Failed to fetch URL: ${response.status}`,
-      };
+      return { imageUrl: null, error: `Failed to fetch URL: ${response.status}` };
     }
 
     const html = await response.text();
 
-    // og:image
     const ogMatch =
-      html.match(
-        /<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']+)["']/i
-      ) ||
-      html.match(
-        /<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']og:image["']/i
-      );
-    if (ogMatch) {
-      return { imageUrl: ogMatch[1] };
-    }
+      html.match(/<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']+)["']/i) ||
+      html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']og:image["']/i);
+    if (ogMatch) return { imageUrl: ogMatch[1] };
 
-    // twitter:image
     const twitterMatch =
-      html.match(
-        /<meta\s+(?:property|name)=["']twitter:image["']\s+content=["']([^"']+)["']/i
-      ) ||
-      html.match(
-        /<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']twitter:image["']/i
-      );
-    if (twitterMatch) {
-      return { imageUrl: twitterMatch[1] };
-    }
+      html.match(/<meta\s+(?:property|name)=["']twitter:image["']\s+content=["']([^"']+)["']/i) ||
+      html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']twitter:image["']/i);
+    if (twitterMatch) return { imageUrl: twitterMatch[1] };
 
-    // Fallback: large images in page
-    const imgMatches = html.matchAll(
-      /<img[^>]+src=["']([^"']+)["'][^>]*/gi
-    );
+    const imgMatches = html.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*/gi);
     for (const match of imgMatches) {
       const src = match[1];
       if (
@@ -119,17 +156,12 @@ async function extractFromGenericUrl(
         !src.includes("logo") &&
         !src.includes("avatar")
       ) {
-        const resolved = src.startsWith("http")
-          ? src
-          : new URL(src, url).href;
+        const resolved = src.startsWith("http") ? src : new URL(src, url).href;
         return { imageUrl: resolved };
       }
     }
 
-    return {
-      imageUrl: null,
-      error: "No image found at this URL. Try screenshotting and uploading instead.",
-    };
+    return { imageUrl: null, error: "No image found at this URL." };
   } catch (err) {
     return {
       imageUrl: null,
