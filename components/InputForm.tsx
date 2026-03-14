@@ -4,8 +4,9 @@ import { useState, useRef } from "react";
 
 interface InputFormProps {
   onGenerate: (data: {
-    imageBase64: string;
-    mediaType: string;
+    file?: File;
+    imageBase64?: string;
+    mediaType?: string;
     sourceUrl?: string;
     notes?: string;
   }) => void;
@@ -19,22 +20,22 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
   const [preview, setPreview] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasImage, setHasImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const imageDataRef = useRef<{ base64: string; mediaType: string } | null>(null);
+  const fileRef = useRef<File | null>(null);
+  const extractedDataRef = useRef<{ base64: string; mediaType: string } | null>(null);
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setError(null);
+    fileRef.current = file;
+    extractedDataRef.current = null;
+    setHasImage(true);
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      setPreview(result);
-      const base64 = result.split(",")[1];
-      imageDataRef.current = { base64, mediaType: file.type || "image/jpeg" };
-    };
-    reader.readAsDataURL(file);
+    // Show preview
+    const objectUrl = URL.createObjectURL(file);
+    setPreview(objectUrl);
   }
 
   async function handleExtractUrl() {
@@ -51,14 +52,15 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
       const data = await res.json();
 
       if (!res.ok) {
-        // If extraction fails, guide user to screenshot instead
         setError(data.error || "Failed to extract image");
         setMode("upload");
         return;
       }
 
       setPreview(`data:${data.mediaType};base64,${data.base64}`);
-      imageDataRef.current = { base64: data.base64, mediaType: data.mediaType };
+      extractedDataRef.current = { base64: data.base64, mediaType: data.mediaType };
+      fileRef.current = null;
+      setHasImage(true);
     } catch {
       setError("Failed to extract image from URL");
     } finally {
@@ -68,13 +70,14 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!imageDataRef.current) {
+    if (!hasImage) {
       setError("Please provide an image first");
       return;
     }
     onGenerate({
-      imageBase64: imageDataRef.current.base64,
-      mediaType: imageDataRef.current.mediaType,
+      file: fileRef.current || undefined,
+      imageBase64: extractedDataRef.current?.base64,
+      mediaType: extractedDataRef.current?.mediaType,
       sourceUrl: url || undefined,
       notes: notes || undefined,
     });
@@ -146,7 +149,8 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
         <div className="space-y-3">
           <div className="flex gap-2">
             <input
-              type="url"
+              type="text"
+              inputMode="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="Paste Instagram, Pinterest, or TikTok URL..."
@@ -175,7 +179,7 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        placeholder="Optional: &quot;Focus on color mixing&quot; or &quot;Use only recycled materials&quot;..."
+        placeholder='Optional: "Focus on color mixing" or "Use only recycled materials"...'
         rows={2}
         className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400 resize-none"
       />
@@ -188,7 +192,7 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
       {/* Submit */}
       <button
         type="submit"
-        disabled={isLoading || !imageDataRef.current}
+        disabled={isLoading || !hasImage}
         className="w-full rounded-xl bg-orange-500 py-4 text-lg font-bold text-white transition hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (

@@ -9,8 +9,9 @@ import LessonPlan from "@/components/LessonPlan";
 import type { LessonPlanData } from "@/lib/claude";
 
 interface GeneratePayload {
-  imageBase64: string;
-  mediaType: string;
+  file?: File;
+  imageBase64?: string;
+  mediaType?: string;
   sourceUrl?: string;
   notes?: string;
 }
@@ -40,8 +41,12 @@ export default function Home() {
 
     try {
       const formData = new FormData();
-      formData.set("imageBase64", input.imageBase64);
-      formData.set("mediaType", input.mediaType);
+      if (input.file) {
+        formData.set("image", input.file);
+      } else if (input.imageBase64 && input.mediaType) {
+        formData.set("imageBase64", input.imageBase64);
+        formData.set("mediaType", input.mediaType);
+      }
       if (input.notes) formData.set("notes", input.notes);
 
       const res = await fetch("/api/generate", {
