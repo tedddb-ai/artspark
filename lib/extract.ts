@@ -6,7 +6,6 @@ function isInstagramUrl(url: string): boolean {
 }
 
 function normalizeInstagramUrl(url: string): string {
-  // Clean tracking params, ensure trailing slash
   const u = new URL(url);
   u.search = "";
   let path = u.pathname;
@@ -19,54 +18,46 @@ async function extractFromInstagram(
 ): Promise<{ imageUrl: string | null; error?: string }> {
   const cleanUrl = normalizeInstagramUrl(url);
 
-  // Strategy 1: Instagram oEmbed endpoint (works for public posts & reels)
+  const appId = process.env.FACEBOOK_APP_ID;
+  const clientToken = process.env.FACEBOOK_CLIENT_TOKEN;
+
+  if (!appId || !clientToken) {
+    return {
+      imageUrl: null,
+      error: "Instagram integration not configured. FACEBOOK_APP_ID and FACEBOOK_CLIENT_TOKEN required.",
+    };
+  }
+
+  // Facebook Graph API oEmbed — the only reliable server-side approach
+  // Works for posts, reels, IGTV, all public Instagram content
   try {
-    const oembedUrl = `https://api.instagram.com/oembed/?url=${encodeURIComponent(cleanUrl)}&maxwidth=1080`;
-    const res = await fetch(oembedUrl, {
-      headers: { "User-Agent": BROWSER_UA },
-    });
+    const accessToken = `${appId}|${clientToken}`;
+    const oembedUrl = `https://graph.facebook.com/v22.0/instagram_oembed?url=${encodeURIComponent(cleanUrl)}&maxwidth=1080&access_token=${accessToken}`;
+    const res = await fetch(oembedUrl);
+
     if (res.ok) {
       const data = await res.json();
       if (data.thumbnail_url) {
         return { imageUrl: data.thumbnail_url };
       }
-    }
-  } catch {
-    // oEmbed failed, try next strategy
-  }
-
-  // Strategy 2: Fetch page with mobile UA, parse og:image
-  try {
-    const res = await fetch(cleanUrl, {
-      headers: {
-        "User-Agent": BROWSER_UA,
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-      },
-      redirect: "follow",
-    });
-    if (res.ok) {
-      const html = await res.text();
-      const ogMatch =
-        html.match(
-          /<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']+)["']/i
-        ) ||
-        html.match(
-          /<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']og:image["']/i
-        );
-      if (ogMatch) {
-        return { imageUrl: ogMatch[1] };
+      // oEmbed returned but no thumbnail — try parsing the HTML embed
+      if (data.html) {
+        const imgMatch = data.html.match(/src=["']([^"']+)["']/);
+        if (imgMatch) {
+          return { imageUrl: imgMatch[1] };
+        }
       }
+    } else {
+      const err = await res.json().catch(() => null);
+      console.error("Instagram oEmbed error:", err);
     }
-  } catch {
-    // Page fetch failed
+  } catch (e) {
+    console.error("Instagram oEmbed fetch failed:", e);
   }
 
   return {
     imageUrl: null,
-    error:
-      "Couldn't extract this Instagram post automatically. Take a screenshot of the post and upload it instead — works great!",
+    error: "Couldn't extract this Instagram post. It may be private or restricted.",
   };
 }
 
@@ -92,7 +83,7 @@ async function extractFromGenericUrl(
 
     const html = await response.text();
 
-    // og:image (most reliable)
+    // og:image
     const ogMatch =
       html.match(
         /<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']+)["']/i
@@ -135,7 +126,10 @@ async function extractFromGenericUrl(
       }
     }
 
-    return { imageUrl: null, error: "No image found at this URL. Try taking a screenshot and uploading it instead." };
+    return {
+      imageUrl: null,
+      error: "No image found at this URL. Try screenshotting and uploading instead.",
+    };
   } catch (err) {
     return {
       imageUrl: null,
