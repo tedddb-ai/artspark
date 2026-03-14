@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
 import InputForm from "@/components/InputForm";
 import LessonPlan from "@/components/LessonPlan";
+import Recommendations from "@/components/Recommendations";
 import type { LessonPlanData } from "@/lib/claude";
 
 function friendlyError(msg: string): string {
@@ -185,10 +186,42 @@ export default function Home() {
       }
 
       setSavedPlanId(id);
+      localStorage.setItem("artspark_has_saved", "1");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save lesson plan");
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleGenerateFromText(title: string, overview: string) {
+    setIsGenerating(true);
+    setError(null);
+    setSavedPlanId(null);
+    setSourceUrl(undefined);
+
+    try {
+      const res = await fetch("/api/generate-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: `${title}\n\n${overview}` }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to generate lesson plan");
+      }
+
+      setGenerated({ plan: data.plan });
+      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+      polishInBackground(data.plan);
+    } catch (err) {
+      setGenerated(null);
+      const raw = err instanceof Error ? err.message : "";
+      console.error("Generate-text error:", raw);
+      setError(friendlyError(raw));
+    } finally {
+      setIsGenerating(false);
     }
   }
 
@@ -293,6 +326,10 @@ export default function Home() {
           </div>
         )}
       </section>
+
+      {!generated && !isGenerating && (
+        <Recommendations onSelect={handleGenerateFromText} />
+      )}
 
       {generated ? (
         <section ref={resultRef} className="space-y-4 rounded-[28px] border border-gray-200 bg-white p-5 shadow-sm">

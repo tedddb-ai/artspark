@@ -134,6 +134,56 @@ export async function generateLessonPlan(
   }
 }
 
+/** Text-only generation — no image needed. Used for recommendations. */
+export async function generateFromText(
+  description: string,
+  notes?: string,
+  classSize?: number
+): Promise<LessonPlanData> {
+  const anthropic = getClient();
+  const systemPrompt = buildSystemPrompt(classSize);
+
+  const userContent = `Create a lesson plan for this art project concept:\n\n${description}${notes ? `\n\nAdditional notes: ${notes}` : ""}`;
+
+  const messages: Anthropic.MessageParam[] = [
+    { role: "user", content: userContent },
+  ];
+
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-5-20250929",
+    max_tokens: 16000,
+    thinking: { type: "enabled", budget_tokens: 4096 },
+    system: systemPrompt,
+    messages,
+  });
+
+  const textBlock = response.content.find((block) => block.type === "text");
+  if (!textBlock || textBlock.type !== "text") {
+    throw new Error("No text response from Claude");
+  }
+
+  try {
+    return parsePlan(textBlock.text);
+  } catch (firstError) {
+    console.warn("First parse failed, retrying:", firstError);
+    const retry = await anthropic.messages.create({
+      model: "claude-sonnet-4-5-20250929",
+      max_tokens: 8192,
+      system: systemPrompt,
+      messages: [
+        ...messages,
+        { role: "assistant", content: textBlock.text },
+        { role: "user", content: "That response was not valid JSON. Please respond with ONLY the valid JSON object, no markdown fences, no explanation." },
+      ],
+    });
+    const retryText = retry.content.find((b) => b.type === "text");
+    if (!retryText || retryText.type !== "text") {
+      throw new Error("No text response on retry");
+    }
+    return parsePlan(retryText.text);
+  }
+}
+
 const POLISH_PROMPT = `You are an expert early childhood art teacher reviewing a lesson plan draft for a class of 15 kids ages 4-6.
 
 Enhance this lesson plan while keeping the same JSON structure. Focus on:
