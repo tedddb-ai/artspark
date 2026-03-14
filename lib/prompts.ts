@@ -41,7 +41,8 @@ Respond with ONLY valid JSON matching this exact schema:
 export function buildUserPrompt(notes?: string): string {
   let prompt = "Analyze this art project image and generate a complete 60-minute lesson plan for children ages 4-6.";
   if (notes) {
-    prompt += `\n\nTeacher's notes/requests: ${notes}`;
+    prompt += `\n\nAdditional context from the original post and teacher: ${notes}`;
+    prompt += "\n\nUse this context to better understand the art technique, materials used, and intent behind the project. Incorporate relevant details into your lesson plan.";
   }
   return prompt;
 }

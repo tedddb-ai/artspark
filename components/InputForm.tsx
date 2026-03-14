@@ -9,6 +9,7 @@ interface InputFormProps {
     mediaType?: string;
     sourceUrl?: string;
     notes?: string;
+    caption?: string;
   }) => void;
   isLoading: boolean;
 }
@@ -23,7 +24,7 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
   const [hasImage, setHasImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<File | null>(null);
-  const extractedDataRef = useRef<{ base64: string; mediaType: string } | null>(null);
+  const extractedDataRef = useRef<{ base64: string; mediaType: string; caption?: string } | null>(null);
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -58,7 +59,7 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
       }
 
       setPreview(`data:${data.mediaType};base64,${data.base64}`);
-      extractedDataRef.current = { base64: data.base64, mediaType: data.mediaType };
+      extractedDataRef.current = { base64: data.base64, mediaType: data.mediaType, caption: data.caption || undefined };
       fileRef.current = null;
       setHasImage(true);
     } catch {
@@ -80,6 +81,7 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
       mediaType: extractedDataRef.current?.mediaType,
       sourceUrl: url || undefined,
       notes: notes || undefined,
+      caption: extractedDataRef.current?.caption,
     });
   }
 

@@ -10,6 +10,7 @@ export async function POST(request: NextRequest) {
     const imageBase64Input = formData.get("imageBase64") as string | null;
     const mediaTypeInput = formData.get("mediaType") as string | null;
     const notes = formData.get("notes") as string | null;
+    const caption = formData.get("caption") as string | null;
 
     let base64: string;
     let mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp";
@@ -28,7 +29,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const plan = await generateLessonPlan(base64, mediaType, notes || undefined);
+    // Combine user notes with extracted caption for richer context
+    const combinedNotes = [caption, notes].filter(Boolean).join("\n\nTeacher's notes: ");
+    const plan = await generateLessonPlan(base64, mediaType, combinedNotes || undefined);
 
     return NextResponse.json({
       plan,

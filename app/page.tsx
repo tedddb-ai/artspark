@@ -14,6 +14,7 @@ interface GeneratePayload {
   mediaType?: string;
   sourceUrl?: string;
   notes?: string;
+  caption?: string;
 }
 
 function planToEmailBody(plan: LessonPlanData, sourceUrl?: string): string {
@@ -63,6 +64,7 @@ export default function Home() {
         formData.set("mediaType", input.mediaType);
       }
       if (input.notes) formData.set("notes", input.notes);
+      if (input.caption) formData.set("caption", input.caption);
 
       const res = await fetch("/api/generate", {
         method: "POST",

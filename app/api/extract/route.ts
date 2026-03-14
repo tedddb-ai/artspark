@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No URL provided" }, { status: 400 });
     }
 
-    const { imageUrl, error } = await extractImageFromUrl(url);
+    const { imageUrl, caption, error } = await extractImageFromUrl(url);
     if (!imageUrl) {
       return NextResponse.json(
         { error: error || "Could not extract image from URL" },
@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
       imageUrl,
       base64: imageData.base64,
       mediaType: imageData.mediaType,
+      caption: caption || null,
     });
   } catch (error) {
     console.error("Extract error:", error);

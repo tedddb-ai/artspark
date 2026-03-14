@@ -1,11 +1,16 @@
 const BROWSER_UA =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
 
+export interface ExtractResult {
+  imageUrl: string | null;
+  caption?: string;
+  error?: string;
+}
+
 function isInstagramUrl(url: string): boolean {
   return /instagram\.com\/(p|reel|reels|tv)\//i.test(url);
 }
 
-/** Extract the shortcode and type from an Instagram URL */
 function parseInstagramUrl(url: string): { type: string; shortcode: string } | null {
   const match = url.match(/instagram\.com\/(p|reel|reels|tv)\/([A-Za-z0-9_-]+)/i);
   if (!match) return null;
@@ -13,16 +18,88 @@ function parseInstagramUrl(url: string): { type: string; shortcode: string } | n
   return { type, shortcode: match[2] };
 }
 
-async function extractFromInstagram(
-  url: string
-): Promise<{ imageUrl: string | null; error?: string }> {
+/** Extract caption text from Instagram embed HTML */
+function extractCaption(html: string): string | undefined {
+  // The embed page typically has the caption in a few places:
+
+  // 1. In the og:description meta tag
+  const ogDesc =
+    html.match(/<meta\s+(?:property|name)=["']og:description["']\s+content=["']([^"']+)["']/i) ||
+    html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']og:description["']/i);
+  if (ogDesc?.[1] && ogDesc[1].length > 10) {
+    return decodeHtmlEntities(ogDesc[1]);
+  }
+
+  // 2. In the caption div (class="Caption" or similar)
+  const captionMatch =
+    html.match(/class="Caption"[^>]*>[\s\S]*?<span[^>]*>([\s\S]*?)<\/span>/i) ||
+    html.match(/class="[^"]*caption[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+  if (captionMatch?.[1]) {
+    const text = captionMatch[1].replace(/<[^>]+>/g, "").trim();
+    if (text.length > 10) return decodeHtmlEntities(text);
+  }
+
+  // 3. In JSON-LD or embedded data
+  const jsonLdMatch = html.match(/"caption"\s*:\s*"([^"]+)"/i);
+  if (jsonLdMatch?.[1]) {
+    return decodeHtmlEntities(jsonLdMatch[1].replace(/\\n/g, "\n").replace(/\\"/g, '"'));
+  }
+
+  // 4. og:title often has a summary
+  const ogTitle =
+    html.match(/<meta\s+(?:property|name)=["']og:title["']\s+content=["']([^"']+)["']/i) ||
+    html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']og:title["']/i);
+  if (ogTitle?.[1] && ogTitle[1].length > 15) {
+    return decodeHtmlEntities(ogTitle[1]);
+  }
+
+  return undefined;
+}
+
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/g, "'")
+    .replace(/&#x2F;/g, "/");
+}
+
+/** Extract image URL from Instagram embed HTML */
+function extractImageUrl(html: string): string | null {
+  // og:image
+  const ogMatch =
+    html.match(/<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']+)["']/i) ||
+    html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']og:image["']/i);
+  if (ogMatch) return ogMatch[1];
+
+  // Embed markup image
+  const imgMatch =
+    html.match(/class="EmbeddedMediaImage"[^>]*src="([^"]+)"/i) ||
+    html.match(/src="(https:\/\/[^"]*cdninstagram\.com[^"]+)"/i) ||
+    html.match(/src="(https:\/\/scontent[^"]+)"/i);
+  if (imgMatch) return imgMatch[1].replace(/&amp;/g, "&");
+
+  // Background image
+  const bgMatch = html.match(/background-image:\s*url\(["']?(https:\/\/[^"')]+)["']?\)/i);
+  if (bgMatch) return bgMatch[1].replace(/&amp;/g, "&");
+
+  // Any CDN URL
+  const cdnMatch = html.match(/(https:\/\/(?:scontent|instagram)[^"'\s\\]+\.(?:jpg|jpeg|png|webp)[^"'\s\\]*)/i);
+  if (cdnMatch) return cdnMatch[1].replace(/\\u0026/g, "&").replace(/&amp;/g, "&");
+
+  return null;
+}
+
+async function extractFromInstagram(url: string): Promise<ExtractResult> {
   const parsed = parseInstagramUrl(url);
   if (!parsed) {
     return { imageUrl: null, error: "Could not parse Instagram URL" };
   }
 
-  // Strategy 1: Fetch the /embed/ page — lightweight, no auth needed
-  // Instagram serves a simpler HTML page for embeds that contains the image
+  // Strategy 1: Embed page — has both image and caption
   try {
     const embedUrl = `https://www.instagram.com/${parsed.type}/${parsed.shortcode}/embed/`;
     const res = await fetch(embedUrl, {
@@ -36,43 +113,18 @@ async function extractFromInstagram(
 
     if (res.ok) {
       const html = await res.text();
+      const imageUrl = extractImageUrl(html);
+      const caption = extractCaption(html);
 
-      // The embed page has images in various places — try them all
-      // 1. og:image meta tag
-      const ogMatch =
-        html.match(/<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']+)["']/i) ||
-        html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']og:image["']/i);
-      if (ogMatch) {
-        return { imageUrl: ogMatch[1] };
-      }
-
-      // 2. Image in the embed markup (class="EmbeddedMediaImage" or similar)
-      const imgMatch =
-        html.match(/class="EmbeddedMediaImage"[^>]*src="([^"]+)"/i) ||
-        html.match(/class="[^"]*"[^>]*src="(https:\/\/[^"]*scontent[^"]*cdninstagram[^"]+)"/i) ||
-        html.match(/src="(https:\/\/[^"]*cdninstagram\.com[^"]+)"/i) ||
-        html.match(/src="(https:\/\/scontent[^"]+)"/i);
-      if (imgMatch) {
-        return { imageUrl: imgMatch[1].replace(/&amp;/g, "&") };
-      }
-
-      // 3. Background image in style attributes
-      const bgMatch = html.match(/background-image:\s*url\(["']?(https:\/\/[^"')]+)["']?\)/i);
-      if (bgMatch) {
-        return { imageUrl: bgMatch[1].replace(/&amp;/g, "&") };
-      }
-
-      // 4. Any Instagram CDN image URL in the page
-      const cdnMatch = html.match(/(https:\/\/(?:scontent|instagram)[^"'\s\\]+\.(?:jpg|jpeg|png|webp)[^"'\s\\]*)/i);
-      if (cdnMatch) {
-        return { imageUrl: cdnMatch[1].replace(/\\u0026/g, "&").replace(/&amp;/g, "&") };
+      if (imageUrl) {
+        return { imageUrl, caption };
       }
     }
   } catch (e) {
     console.error("Instagram embed fetch failed:", e);
   }
 
-  // Strategy 2: Try the /media/ redirect endpoint (works for posts, not always reels)
+  // Strategy 2: /media/ redirect (posts only, no caption)
   if (parsed.type === "p") {
     try {
       const mediaUrl = `https://www.instagram.com/p/${parsed.shortcode}/media/?size=l`;
@@ -89,7 +141,7 @@ async function extractFromInstagram(
     }
   }
 
-  // Strategy 3: Direct page fetch with mobile UA
+  // Strategy 3: Direct page fetch
   try {
     const cleanUrl = `https://www.instagram.com/${parsed.type}/${parsed.shortcode}/`;
     const res = await fetch(cleanUrl, {
@@ -102,12 +154,9 @@ async function extractFromInstagram(
     });
     if (res.ok) {
       const html = await res.text();
-      const ogMatch =
-        html.match(/<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']+)["']/i) ||
-        html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']og:image["']/i);
-      if (ogMatch) {
-        return { imageUrl: ogMatch[1] };
-      }
+      const imageUrl = extractImageUrl(html);
+      const caption = extractCaption(html);
+      if (imageUrl) return { imageUrl, caption };
     }
   } catch {
     // direct fetch failed
@@ -119,9 +168,7 @@ async function extractFromInstagram(
   };
 }
 
-async function extractFromGenericUrl(
-  url: string
-): Promise<{ imageUrl: string | null; error?: string }> {
+async function extractFromGenericUrl(url: string): Promise<ExtractResult> {
   try {
     const response = await fetch(url, {
       headers: {
@@ -137,15 +184,22 @@ async function extractFromGenericUrl(
 
     const html = await response.text();
 
+    // Extract description as caption context
+    const descMatch =
+      html.match(/<meta\s+(?:property|name)=["']og:description["']\s+content=["']([^"']+)["']/i) ||
+      html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']og:description["']/i) ||
+      html.match(/<meta\s+name=["']description["']\s+content=["']([^"']+)["']/i);
+    const caption = descMatch?.[1] ? decodeHtmlEntities(descMatch[1]) : undefined;
+
     const ogMatch =
       html.match(/<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']+)["']/i) ||
       html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']og:image["']/i);
-    if (ogMatch) return { imageUrl: ogMatch[1] };
+    if (ogMatch) return { imageUrl: ogMatch[1], caption };
 
     const twitterMatch =
       html.match(/<meta\s+(?:property|name)=["']twitter:image["']\s+content=["']([^"']+)["']/i) ||
       html.match(/<meta\s+content=["']([^"']+)["']\s+(?:property|name)=["']twitter:image["']/i);
-    if (twitterMatch) return { imageUrl: twitterMatch[1] };
+    if (twitterMatch) return { imageUrl: twitterMatch[1], caption };
 
     const imgMatches = html.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*/gi);
     for (const match of imgMatches) {
@@ -157,7 +211,7 @@ async function extractFromGenericUrl(
         !src.includes("avatar")
       ) {
         const resolved = src.startsWith("http") ? src : new URL(src, url).href;
-        return { imageUrl: resolved };
+        return { imageUrl: resolved, caption };
       }
     }
 
@@ -170,9 +224,7 @@ async function extractFromGenericUrl(
   }
 }
 
-export async function extractImageFromUrl(
-  url: string
-): Promise<{ imageUrl: string | null; error?: string }> {
+export async function extractImageFromUrl(url: string): Promise<ExtractResult> {
   if (isInstagramUrl(url)) {
     return extractFromInstagram(url);
   }
