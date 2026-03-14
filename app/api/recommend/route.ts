@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { getTasteData, getProfile } from "@/lib/db";
 import { buildTasteProfile, buildRecommendationPrompt } from "@/lib/taste";
+import { checkAuth } from "@/lib/auth";
 
 export const maxDuration = 60;
 
@@ -36,7 +37,10 @@ export interface Recommendation {
   seasonal_tie: string | null;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = checkAuth(request);
+  if (authError) return authError;
+
   try {
     const [tasteData, profile] = await Promise.all([
       getTasteData(),

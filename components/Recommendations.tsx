@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { authHeaders } from "@/lib/auth";
 
 interface Recommendation {
   title: string;
@@ -35,7 +36,7 @@ export default function Recommendations({
     if (!hasUsed) return;
 
     setLoading(true);
-    fetch("/api/recommend")
+    fetch("/api/recommend", { headers: authHeaders() })
       .then((r) => {
         if (!r.ok) throw new Error();
         return r.json();

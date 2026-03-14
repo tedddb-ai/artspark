@@ -9,6 +9,7 @@ import InputForm from "@/components/InputForm";
 import LessonPlan from "@/components/LessonPlan";
 import Recommendations from "@/components/Recommendations";
 import type { LessonPlanData } from "@/lib/claude";
+import { authHeaders } from "@/lib/auth";
 
 function friendlyError(msg: string): string {
   if (msg.includes("API_KEY") || msg.includes("api_key") || msg.includes("401"))
@@ -100,7 +101,7 @@ export default function Home() {
     try {
       const res = await fetch("/api/polish", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ draft }),
       });
       if (res.ok) {
@@ -134,6 +135,7 @@ export default function Home() {
 
       const res = await fetch("/api/generate", {
         method: "POST",
+        headers: authHeaders(),
         body: formData,
       });
       const data = await res.json();
@@ -203,7 +205,7 @@ export default function Home() {
     try {
       const res = await fetch("/api/generate-text", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ description: `${title}\n\n${overview}` }),
       });
       const data = await res.json();

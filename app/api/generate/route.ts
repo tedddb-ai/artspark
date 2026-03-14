@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateLessonPlan } from "@/lib/claude";
 import { getProfile, getFrequentMaterials } from "@/lib/db";
+import { checkAuth } from "@/lib/auth";
 
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
+  const authError = checkAuth(request);
+  if (authError) return authError;
+
   try {
     const formData = await request.formData();
     const imageFile = formData.get("image") as File | null;

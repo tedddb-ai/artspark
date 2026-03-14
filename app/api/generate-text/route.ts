@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateFromText } from "@/lib/claude";
 import { getProfile, getFrequentMaterials } from "@/lib/db";
+import { checkAuth } from "@/lib/auth";
 
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
+  const authError = checkAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { description, notes } = body;

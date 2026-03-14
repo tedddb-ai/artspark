@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { polishLessonPlan } from "@/lib/claude";
+import { checkAuth } from "@/lib/auth";
 
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
+  const authError = checkAuth(request);
+  if (authError) return authError;
+
   try {
     const { draft } = await request.json();
     if (!draft) {
