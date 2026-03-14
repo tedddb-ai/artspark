@@ -121,9 +121,39 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
     }
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!hasImage) {
+
+    // If in URL mode with a URL but no extracted image yet, extract first then generate
+    if (mode === "url" && url.trim() && !extractedDataRef.current) {
+      setExtracting(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/extract", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: url.trim() }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || "Failed to extract image from that URL. Try uploading a photo instead.");
+          setExtracting(false);
+          return;
+        }
+        setPreview(`data:${data.mediaType};base64,${data.base64}`);
+        extractedDataRef.current = { base64: data.base64, mediaType: data.mediaType, caption: data.caption || undefined };
+        fileRef.current = null;
+        setHasImage(true);
+      } catch {
+        setError("Failed to extract image from URL. Try uploading a photo instead.");
+        setExtracting(false);
+        return;
+      } finally {
+        setExtracting(false);
+      }
+    }
+
+    if (!hasImage && !extractedDataRef.current) {
       setError("Please provide an image first");
       return;
     }
@@ -201,29 +231,14 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
       {/* URL Mode */}
       {mode === "url" && (
         <div className="space-y-3">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              inputMode="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="Paste Instagram, Pinterest, or TikTok URL..."
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-crayon-red focus:outline-none focus:ring-1 focus:ring-crayon-red"
-            />
-            <button
-              type="button"
-              onClick={handleExtractUrl}
-              disabled={extracting || !url.trim()}
-              className="rounded-lg bg-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-300 disabled:opacity-50"
-            >
-              {extracting ? (
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent" />
-                Extracting
-              </span>
-            ) : "Get"}
-            </button>
-          </div>
+          <input
+            type="text"
+            inputMode="url"
+            value={url}
+            onChange={(e) => { setUrl(e.target.value); setError(null); }}
+            placeholder="Paste Instagram, Pinterest, or TikTok URL..."
+            className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-crayon-red focus:outline-none focus:ring-1 focus:ring-crayon-red"
+          />
           {preview && (
             <img
               src={preview}
@@ -251,10 +266,15 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
       {/* Submit */}
       <button
         type="submit"
-        disabled={isLoading || !hasImage}
+        disabled={isLoading || extracting || (!hasImage && !(mode === "url" && url.trim()))}
         className="w-full rounded-xl bg-crayon-red py-4 text-lg font-bold text-white transition hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isLoading ? (
+        {extracting ? (
+          <span className="flex items-center justify-center gap-2">
+            <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            Extracting image...
+          </span>
+        ) : isLoading ? (
           <span className="flex items-center justify-center gap-2">
             <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
             {loadingMessages[loadingPhase]}
