@@ -1,0 +1,22 @@
+{
+  "name": "ArtSpark",
+  "short_name": "ArtSpark",
+  "description": "Turn art project inspiration into classroom-ready lesson plans",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#f97316",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}

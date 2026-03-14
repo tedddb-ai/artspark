@@ -1,65 +1,219 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { v4 as uuidv4 } from "uuid";
+import InputForm from "@/components/InputForm";
+import LessonPlan from "@/components/LessonPlan";
+import type { LessonPlanData } from "@/lib/claude";
+
+interface GeneratePayload {
+  imageBase64: string;
+  mediaType: string;
+  sourceUrl?: string;
+  notes?: string;
+}
+
+interface GeneratedResult {
+  plan: LessonPlanData;
+  imageBase64: string;
+  mediaType: string;
+}
 
 export default function Home() {
+  const router = useRouter();
+  const [generated, setGenerated] = useState<GeneratedResult | null>(null);
+  const [sourceUrl, setSourceUrl] = useState<string | undefined>();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedPlanId, setSavedPlanId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleGenerate(input: GeneratePayload) {
+    setIsGenerating(true);
+    setError(null);
+    setSavedPlanId(null);
+
+    try {
+      const formData = new FormData();
+      formData.set("imageBase64", input.imageBase64);
+      formData.set("mediaType", input.mediaType);
+      if (input.notes) formData.set("notes", input.notes);
+
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to generate lesson plan");
+      }
+
+      setGenerated({
+        plan: data.plan,
+        imageBase64: data.imageBase64,
+        mediaType: data.mediaType,
+      });
+      setSourceUrl(input.sourceUrl);
+    } catch (err) {
+      setGenerated(null);
+      setError(
+        err instanceof Error ? err.message : "Failed to generate lesson plan"
+      );
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
+  async function handleSave() {
+    if (!generated || isSaving) return;
+
+    setIsSaving(true);
+    setError(null);
+
+    const id = uuidv4();
+
+    try {
+      const res = await fetch("/api/plans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          title: generated.plan.title,
+          overview: generated.plan.overview,
+          plan_json: JSON.stringify(generated.plan),
+          source_url: sourceUrl,
+          source_image_base64: generated.imageBase64,
+          mess_level: generated.plan.mess_level,
+          tags: generated.plan.tags.join(", "),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to save lesson plan");
+      }
+
+      setSavedPlanId(id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save lesson plan");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  function handleOpenSavedPlan() {
+    if (!savedPlanId) return;
+    router.push(`/plan/${savedPlanId}`);
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="space-y-6 pb-10">
+      <section className="space-y-4 rounded-[28px] bg-gradient-to-br from-orange-100 via-amber-50 to-white p-5 shadow-sm ring-1 ring-orange-100">
+        <div className="inline-flex rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-orange-600">
+          Mobile-first lesson planning
+        </div>
+        <div className="space-y-3">
+          <h1 className="max-w-sm text-4xl font-semibold tracking-tight text-gray-950">
+            Turn art inspiration into a teachable plan for ages 4-6.
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="max-w-md text-sm leading-6 text-gray-600">
+            Paste an inspiration URL or upload a photo. ArtSpark extracts the
+            idea, generates a structured 60-minute lesson, and saves it to your
+            classroom library.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs text-gray-600">
+          <div className="rounded-2xl bg-white px-3 py-3">
+            <div className="text-lg font-semibold text-gray-900">1</div>
+            Add photo or URL
+          </div>
+          <div className="rounded-2xl bg-white px-3 py-3">
+            <div className="text-lg font-semibold text-gray-900">2</div>
+            Review lesson plan
+          </div>
+          <div className="rounded-2xl bg-white px-3 py-3">
+            <div className="text-lg font-semibold text-gray-900">3</div>
+            Save to library
+          </div>
         </div>
-      </main>
+      </section>
+
+      <section className="rounded-[28px] border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Start with inspiration
+          </h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Works with uploaded images or social post URLs that expose a usable
+            preview image.
+          </p>
+        </div>
+
+        <InputForm onGenerate={handleGenerate} isLoading={isGenerating} />
+
+        {error && (
+          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+      </section>
+
+      {generated ? (
+        <section className="space-y-4 rounded-[28px] border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                Generated lesson plan
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Review the plan, then save it for later or print it from the
+                full plan view.
+              </p>
+            </div>
+            <Link
+              href="/library"
+              className="shrink-0 rounded-full bg-gray-100 px-3 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-200"
+            >
+              Open Library
+            </Link>
+          </div>
+
+          {savedPlanId ? (
+            <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+              Lesson plan saved.
+              {" "}
+              <button
+                type="button"
+                onClick={handleOpenSavedPlan}
+                className="font-semibold underline decoration-green-400 underline-offset-2"
+              >
+                Open saved plan
+              </button>
+            </div>
+          ) : null}
+
+          <LessonPlan
+            plan={generated.plan}
+            sourceUrl={sourceUrl}
+            imagePreview={`data:${generated.mediaType};base64,${generated.imageBase64}`}
+            onSave={handleSave}
+            isSaved={Boolean(savedPlanId) || isSaving}
+          />
+        </section>
+      ) : (
+        <section className="rounded-[28px] border border-dashed border-gray-300 bg-gray-50 p-6 text-center">
+          <p className="text-sm font-medium text-gray-700">
+            Your generated lesson plan will appear here.
+          </p>
+          <p className="mt-1 text-sm text-gray-500">
+            Start from a camera photo, a Pinterest pin, or another inspiration
+            image URL.
+          </p>
+        </section>
+      )}
     </div>
   );
 }
