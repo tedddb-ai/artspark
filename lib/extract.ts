@@ -1,6 +1,14 @@
 const BROWSER_UA =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
 
+const FETCH_TIMEOUT_MS = 8000;
+
+function fetchWithTimeout(url: string, options: RequestInit = {}): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timeout));
+}
+
 export interface ExtractResult {
   imageUrl: string | null;
   caption?: string;
@@ -102,7 +110,7 @@ async function extractFromInstagram(url: string): Promise<ExtractResult> {
   // Strategy 1: Embed page — has both image and caption
   try {
     const embedUrl = `https://www.instagram.com/${parsed.type}/${parsed.shortcode}/embed/`;
-    const res = await fetch(embedUrl, {
+    const res = await fetchWithTimeout(embedUrl, {
       headers: {
         "User-Agent": BROWSER_UA,
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -128,7 +136,7 @@ async function extractFromInstagram(url: string): Promise<ExtractResult> {
   if (parsed.type === "p") {
     try {
       const mediaUrl = `https://www.instagram.com/p/${parsed.shortcode}/media/?size=l`;
-      const res = await fetch(mediaUrl, {
+      const res = await fetchWithTimeout(mediaUrl, {
         headers: { "User-Agent": BROWSER_UA },
         redirect: "manual",
       });
@@ -144,7 +152,7 @@ async function extractFromInstagram(url: string): Promise<ExtractResult> {
   // Strategy 3: Direct page fetch
   try {
     const cleanUrl = `https://www.instagram.com/${parsed.type}/${parsed.shortcode}/`;
-    const res = await fetch(cleanUrl, {
+    const res = await fetchWithTimeout(cleanUrl, {
       headers: {
         "User-Agent": BROWSER_UA,
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -170,7 +178,7 @@ async function extractFromInstagram(url: string): Promise<ExtractResult> {
 
 async function extractFromGenericUrl(url: string): Promise<ExtractResult> {
   try {
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       headers: {
         "User-Agent": BROWSER_UA,
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -235,16 +243,21 @@ export async function fetchImageAsBase64(
   imageUrl: string
 ): Promise<{ base64: string; mediaType: string } | null> {
   try {
-    const response = await fetch(imageUrl, {
+    const response = await fetchWithTimeout(imageUrl, {
       headers: { "User-Agent": BROWSER_UA },
     });
     if (!response.ok) return null;
 
+    const contentType = (response.headers.get("content-type") || "").split(";")[0];
+    if (!contentType.startsWith("image/")) {
+      console.error("fetchImageAsBase64: not an image, got", contentType);
+      return null;
+    }
+
     const buffer = await response.arrayBuffer();
     const base64 = Buffer.from(buffer).toString("base64");
-    const contentType = response.headers.get("content-type") || "image/jpeg";
 
-    return { base64, mediaType: contentType.split(";")[0] };
+    return { base64, mediaType: contentType || "image/jpeg" };
   } catch {
     return null;
   }

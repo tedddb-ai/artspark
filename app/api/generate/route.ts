@@ -29,9 +29,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Combine user notes with extracted caption for richer context
-    const combinedNotes = [caption, notes].filter(Boolean).join("\n\nTeacher's notes: ");
-    const plan = await generateLessonPlan(base64, mediaType, combinedNotes || undefined);
+    const plan = await generateLessonPlan(
+      base64,
+      mediaType,
+      notes || undefined,
+      caption || undefined
+    );
 
     return NextResponse.json({ plan });
   } catch (error) {

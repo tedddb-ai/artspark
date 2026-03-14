@@ -46,16 +46,18 @@ function extractJson(text: string): string {
   return jsonStr;
 }
 
-/** Step 1: Sonnet generates the draft (fast, ~5-8s) */
+/** Sonnet with extended thinking for best one-shot quality */
 export async function generateLessonPlan(
   imageBase64: string,
   mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-  notes?: string
+  notes?: string,
+  caption?: string
 ): Promise<LessonPlanData> {
   const anthropic = getClient();
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-5-20250929",
-    max_tokens: 4096,
+    max_tokens: 16000,
+    thinking: { type: "enabled", budget_tokens: 4096 },
     system: LESSON_PLAN_SYSTEM_PROMPT,
     messages: [
       {
@@ -65,7 +67,7 @@ export async function generateLessonPlan(
             type: "image",
             source: { type: "base64", media_type: mediaType, data: imageBase64 },
           },
-          { type: "text", text: buildUserPrompt(notes) },
+          { type: "text", text: buildUserPrompt(notes, caption) },
         ],
       },
     ],
