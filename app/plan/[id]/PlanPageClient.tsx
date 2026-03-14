@@ -114,7 +114,7 @@ export default function PlanPageClient({ id }: { id: string }) {
       />
 
       {showCarousel && (
-        <CarouselPreview slides={generateCarouselSlides(plan, planUrl)} />
+        <CarouselPreview slides={generateCarouselSlides(plan, planUrl)} planId={id} />
       )}
     </div>
   );

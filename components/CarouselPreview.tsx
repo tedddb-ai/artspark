@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { CarouselSlide } from "@/lib/social";
 
 const ACCENT_COLORS: Record<string, { bg: string; border: string; text: string }> = {
@@ -10,7 +11,41 @@ const ACCENT_COLORS: Record<string, { bg: string; border: string; text: string }
   "crayon-pink": { bg: "bg-pink-50", border: "border-crayon-pink/30", text: "text-crayon-pink" },
 };
 
-export default function CarouselPreview({ slides }: { slides: CarouselSlide[] }) {
+export default function CarouselPreview({
+  slides,
+  planId,
+}: {
+  slides: CarouselSlide[];
+  planId?: string;
+}) {
+  const [downloading, setDownloading] = useState(false);
+
+  async function downloadAll() {
+    if (!planId || downloading) return;
+    setDownloading(true);
+    try {
+      for (let i = 1; i <= slides.length; i++) {
+        const res = await fetch(`/api/carousel/${planId}/${i}`);
+        if (!res.ok) continue;
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `artspark-slide-${i}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        // Small delay between downloads so browser doesn't block them
+        if (i < slides.length) await new Promise((r) => setTimeout(r, 300));
+      }
+    } catch {
+      alert("Download failed. Try again.");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -20,7 +55,15 @@ export default function CarouselPreview({ slides }: { slides: CarouselSlide[] })
         >
           Instagram Carousel
         </h3>
-        <span className="text-xs text-gray-400">{slides.length} slides — screenshot to post</span>
+        {planId && (
+          <button
+            onClick={downloadAll}
+            disabled={downloading}
+            className="rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+          >
+            {downloading ? "Downloading..." : `Download All (${slides.length})`}
+          </button>
+        )}
       </div>
 
       <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
@@ -67,7 +110,9 @@ export default function CarouselPreview({ slides }: { slides: CarouselSlide[] })
       </div>
 
       <p className="text-center text-xs text-gray-400">
-        Swipe to preview all slides. Screenshot each one for Instagram.
+        {planId
+          ? "Download all slides as images ready for Instagram."
+          : "Save this plan first to download carousel images."}
       </p>
     </div>
   );
