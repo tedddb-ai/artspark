@@ -89,15 +89,22 @@ export async function GET(request: NextRequest) {
       throw new Error("Invalid recommendation format");
     }
 
-    return NextResponse.json({
-      recommendations: parsed.recommendations as Recommendation[],
-      taste_summary: {
-        total_plans: tasteProfile.total_plans,
-        top_technique: tasteProfile.preferred_techniques[0]?.technique || null,
-        top_mess_level: tasteProfile.preferred_mess_levels[0]?.level || null,
-        has_profile: !!profile,
+    return NextResponse.json(
+      {
+        recommendations: parsed.recommendations as Recommendation[],
+        taste_summary: {
+          total_plans: tasteProfile.total_plans,
+          top_technique: tasteProfile.preferred_techniques[0]?.technique || null,
+          top_mess_level: tasteProfile.preferred_mess_levels[0]?.level || null,
+          has_profile: !!profile,
+        },
       },
-    });
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=14400, stale-while-revalidate=3600",
+        },
+      }
+    );
   } catch (error) {
     console.error("Recommend error:", error);
     return NextResponse.json(

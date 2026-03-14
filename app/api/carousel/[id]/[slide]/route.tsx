@@ -156,6 +156,9 @@ export async function GET(
     return new ImageResponse(renderSlide(slides[slideNum - 1]), {
       width: 1080,
       height: 1080,
+      headers: {
+        "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=3600",
+      },
     });
   } catch (error) {
     console.error("Carousel image error:", error);
