@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,8 @@ import Recommendations from "@/components/Recommendations";
 import type { LessonPlanData } from "@/lib/claude";
 import { authHeaders } from "@/lib/auth";
 import { amazonSearchUrl, amazonBulkSearchUrl } from "@/lib/affiliate";
+import { getPlanCount, incrementPlanCount, isAtLimit, remainingFreePlans, isPremium } from "@/lib/usage";
+import UpgradeWall from "@/components/UpgradeWall";
 
 function friendlyError(msg: string): string {
   if (msg.includes("API_KEY") || msg.includes("api_key") || msg.includes("401"))
@@ -85,7 +87,10 @@ export default function Home() {
   const [isSaving, setIsSaving] = useState(false);
   const [savedPlanId, setSavedPlanId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [atLimit, setAtLimit] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setAtLimit(isAtLimit()); }, []);
 
   /** Fire-and-forget event tracking */
   function trackEvent(planId: string, event: string) {
@@ -126,6 +131,8 @@ export default function Home() {
 
       setGenerated({ plan: data.plan });
       setSourceUrl(input.sourceUrl);
+      incrementPlanCount();
+      setAtLimit(isAtLimit());
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     } catch (err) {
       setGenerated(null);
@@ -193,6 +200,8 @@ export default function Home() {
       }
 
       setGenerated({ plan: data.plan });
+      incrementPlanCount();
+      setAtLimit(isAtLimit());
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     } catch (err) {
       setGenerated(null);
@@ -288,24 +297,35 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="rounded-[28px] border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Add your inspiration photo
-          </h2>
-          <p className="mt-1 text-sm text-gray-600">
-            Take a photo of an art project, or paste a link from Pinterest or Instagram.
-          </p>
-        </div>
-
-        <InputForm onGenerate={handleGenerate} isLoading={isGenerating} />
-
-        {error && (
-          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
+      {atLimit ? (
+        <UpgradeWall onUnlocked={() => setAtLimit(false)} />
+      ) : (
+        <section className="rounded-[28px] border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="mb-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Add your inspiration photo
+              </h2>
+              {!isPremium() && (
+                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
+                  {remainingFreePlans()} free left
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-sm text-gray-600">
+              Take a photo of an art project, or paste a link from Pinterest or Instagram.
+            </p>
           </div>
-        )}
-      </section>
+
+          <InputForm onGenerate={handleGenerate} isLoading={isGenerating} />
+
+          {error && (
+            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+        </section>
+      )}
 
       {!generated && !isGenerating && (
         <Recommendations onSelect={handleGenerateFromText} />
