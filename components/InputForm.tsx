@@ -44,7 +44,9 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
   function compressImage(file: File): Promise<File> {
     return new Promise((resolve, reject) => {
       const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
       img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
         const MAX_DIM = 1024;
         let { width, height } = img;
         if (width > MAX_DIM || height > MAX_DIM) {
@@ -67,8 +69,11 @@ export default function InputForm({ onGenerate, isLoading }: InputFormProps) {
           0.8
         );
       };
-      img.onerror = () => reject(new Error("Failed to load image"));
-      img.src = URL.createObjectURL(file);
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error("Failed to load image"));
+      };
+      img.src = objectUrl;
     });
   }
 

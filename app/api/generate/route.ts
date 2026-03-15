@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
   // Server-side usage enforcement
   const { sid, isNew } = await getSessionId();
-  const ownerSecret = process.env.OWNER_SECRET;
+  const ownerSecret = process.env.OWNER_SECRET?.trim();
   const isOwner = ownerSecret && request.headers.get("x-owner") === ownerSecret;
   if (!isOwner && await isAtServerLimit(sid)) {
     return NextResponse.json(
@@ -95,17 +95,18 @@ export async function POST(request: NextRequest) {
           const finalMessage = await messageStream.finalMessage();
           clearInterval(keepalive);
 
+          // Track generation as soon as API call succeeds (before JSON parsing)
+          await trackGeneration(sid);
+
           const textBlock = finalMessage.content.find((b) => b.type === "text");
           if (!textBlock || textBlock.type !== "text") {
             controller.enqueue(new TextEncoder().encode(JSON.stringify({ error: "No response from AI" })));
           } else {
-            // Extract JSON from response
             let jsonStr = textBlock.text.trim();
             const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
             if (jsonMatch) jsonStr = jsonMatch[1].trim();
             const result = safeJsonParse(jsonStr);
             if (result.ok) {
-              await trackGeneration(sid);
               controller.enqueue(new TextEncoder().encode(JSON.stringify({ plan: result.data })));
             } else {
               controller.enqueue(new TextEncoder().encode(JSON.stringify({ error: "AI returned invalid JSON" })));

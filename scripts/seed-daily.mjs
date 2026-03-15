@@ -190,4 +190,9 @@ async function main() {
   db.close();
 }
 
-main().catch(console.error);
+main()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.error("Seeding failed:", err);
+    process.exit(1);
+  });

@@ -18,7 +18,7 @@ export async function GET() {
       const anthropic = new Anthropic({ apiKey });
       const t = Date.now();
       const res = await anthropic.messages.create({
-        model: "claude-sonnet-4-6",
+        model: "claude-sonnet-4-5-20250929",
         max_tokens: 50,
         messages: [{ role: "user", content: "Say 'ok' in JSON: {\"status\":\"ok\"}" }],
       });

@@ -60,8 +60,13 @@ async function ensureTable() {
   `);
 }
 
-// Initialize table on first import
-const tableReady = ensureTable();
+// Initialize tables with timeout and retry
+let tableReady: Promise<void> = ensureTable().catch((err) => {
+  console.error("DB init failed, retrying in 2s:", err);
+  return new Promise((resolve) => setTimeout(resolve, 2000)).then(() => ensureTable());
+}).catch((err) => {
+  console.error("DB init retry failed:", err);
+});
 
 export interface SavedPlan {
   id: string;

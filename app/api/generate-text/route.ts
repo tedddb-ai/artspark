@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
   // Server-side usage enforcement
   const { sid, isNew } = await getSessionId();
-  const ownerSecret = process.env.OWNER_SECRET;
+  const ownerSecret = process.env.OWNER_SECRET?.trim();
   const isOwner = ownerSecret && request.headers.get("x-owner") === ownerSecret;
   if (!isOwner && await isAtServerLimit(sid)) {
     return NextResponse.json(
@@ -82,6 +82,9 @@ export async function POST(request: NextRequest) {
           const finalMessage = await messageStream.finalMessage();
           clearInterval(keepalive);
 
+          // Track generation as soon as API call succeeds (before JSON parsing)
+          await trackGeneration(sid);
+
           const textBlock = finalMessage.content.find((b) => b.type === "text");
           if (!textBlock || textBlock.type !== "text") {
             controller.enqueue(
@@ -94,7 +97,6 @@ export async function POST(request: NextRequest) {
 
             const result = safeJsonParse(jsonStr);
             if (result.ok) {
-              await trackGeneration(sid);
               controller.enqueue(
                 encoder.encode(JSON.stringify({ plan: result.data }))
               );
