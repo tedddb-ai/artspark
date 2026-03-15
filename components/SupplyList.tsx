@@ -58,6 +58,9 @@ export default function SupplyList({ materials, totalCost }: SupplyListProps) {
           </a>
         </div>
       </div>
+      <p className="px-4 py-1.5 text-[10px] text-gray-400">
+        As an Amazon Associate, ArtSpark earns from qualifying purchases.
+      </p>
     </div>
   );
 }

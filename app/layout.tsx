@@ -73,6 +73,9 @@ export default function RootLayout({
           </div>
         </header>
         <main className="mx-auto max-w-lg px-4 py-6">{children}</main>
+        <footer className="mx-auto max-w-lg px-4 pb-6 text-center text-[10px] text-gray-400">
+          <p>As an Amazon Associate, ArtSpark earns from qualifying purchases.</p>
+        </footer>
       </body>
     </html>
   );
