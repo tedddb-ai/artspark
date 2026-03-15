@@ -100,7 +100,7 @@ export async function GET(
           </div>
         </div>
 
-        {/* Footer: stats + tags */}
+        {/* Footer: stats + CTA */}
         <div
           style={{
             display: "flex",
@@ -110,25 +110,20 @@ export async function GET(
         >
           <div style={{ display: "flex", gap: "24px", fontSize: "22px", color: "#888" }}>
             <span>{messEmoji} {messLevel} mess</span>
-            <span>⏱ 60 min</span>
-            {cost && <span>💰 {cost}</span>}
+            <span>60 min</span>
+            {cost && <span>{cost} supplies</span>}
           </div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            {tags.map((tag) => (
-              <div
-                key={tag}
-                style={{
-                  backgroundColor: "#C1272D",
-                  color: "white",
-                  padding: "6px 16px",
-                  borderRadius: "20px",
-                  fontSize: "18px",
-                  fontWeight: "600",
-                }}
-              >
-                {tag}
-              </div>
-            ))}
+          <div
+            style={{
+              backgroundColor: "#C1272D",
+              color: "white",
+              padding: "12px 28px",
+              borderRadius: "28px",
+              fontSize: "22px",
+              fontWeight: "bold",
+            }}
+          >
+            FREE Lesson Plan + Shopping List
           </div>
         </div>
       </div>
