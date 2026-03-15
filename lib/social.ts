@@ -43,7 +43,7 @@ const MESS_EMOJI: Record<string, string> = {
   high: "🌈",
 };
 
-const IG_HANDLE = process.env.NEXT_PUBLIC_INSTAGRAM_HANDLE || "@littlebayartsandcrafts";
+const IG_HANDLE = process.env.NEXT_PUBLIC_INSTAGRAM_HANDLE || "";
 
 function getHashtags(plan: LessonPlanData, max = 25): string[] {
   const tags = new Set<string>();
@@ -181,7 +181,9 @@ export function generateInstagramCaption(
 
   // Link + follow
   lines.push(`Full lesson plan + free shopping list: ${planUrl}`);
-  lines.push(`Follow ${IG_HANDLE} for daily art ideas 🎨`);
+  if (IG_HANDLE) {
+    lines.push(`Follow ${IG_HANDLE} for daily art ideas 🎨`);
+  }
   lines.push("");
 
   // Hashtags
@@ -324,8 +326,13 @@ export function generateCarouselSlides(
     ctaBody.push(`${questions[0]} 👇`);
     ctaBody.push("");
   }
-  ctaBody.push(`Follow ${IG_HANDLE} for daily`);
-  ctaBody.push("art lesson inspiration! 🎨");
+  if (IG_HANDLE) {
+    ctaBody.push(`Follow ${IG_HANDLE} for daily`);
+    ctaBody.push("art lesson inspiration! 🎨");
+  } else {
+    ctaBody.push("Made with ArtSpark 🎨");
+    ctaBody.push("Free AI lesson plans for teachers");
+  }
 
   slides.push({
     title: "Try This! 📌",
