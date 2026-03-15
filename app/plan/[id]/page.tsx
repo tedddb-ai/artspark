@@ -21,11 +21,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const plan = await loadPlan(id);
 
-  const title = plan ? `${plan.title} | ArtSpark` : "Lesson Plan | ArtSpark";
-  const ogTitle = plan?.title || "ArtSpark Lesson Plan";
-  const description =
-    plan?.overview?.slice(0, 160) ||
-    "Turn art inspiration into classroom-ready lesson plans";
+  const title = plan
+    ? `${plan.title} — Free Art Lesson Plan | ArtSpark`
+    : "Free Art Lesson Plan | ArtSpark";
+  const ogTitle = plan?.title || "Free Art Lesson Plan";
+  const description = plan
+    ? `${plan.overview?.slice(0, 120)} Free lesson plan with supply list, step-by-step instructions, and shopping links.`
+    : "Free art lesson plan with supply list and step-by-step instructions for kids.";
 
   const ogImageUrl = `/api/og/${id}`;
 

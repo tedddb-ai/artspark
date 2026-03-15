@@ -3,13 +3,13 @@ import Link from "next/link";
 import { getAllPlans } from "@/lib/db";
 
 export const metadata: Metadata = {
-  title: "Art Lesson Plans for Preschool | ArtSpark Gallery",
+  title: "Free Art Lesson Plans for Kids | ArtSpark Gallery",
   description:
-    "Browse free art lesson plans for kids ages 4-6. Step-by-step instructions, shopping lists, and classroom tips. New plans added weekly.",
+    "Browse free art lesson plans for preschool, kindergarten, and homeschool. Step-by-step instructions, supply lists with prices, and Amazon shopping links.",
   openGraph: {
-    title: "Art Lesson Plans for Preschool | ArtSpark",
+    title: "Free Art Lesson Plans for Kids | ArtSpark",
     description:
-      "Browse free art lesson plans for kids ages 4-6. Step-by-step instructions, shopping lists, and classroom tips.",
+      "Browse free art lesson plans for preschool, kindergarten, and homeschool. Step-by-step instructions and supply lists.",
     type: "website",
   },
 };
