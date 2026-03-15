@@ -14,9 +14,11 @@ const ACCENT_COLORS: Record<string, { bg: string; border: string; text: string }
 export default function CarouselPreview({
   slides,
   planId,
+  onDownload,
 }: {
   slides: CarouselSlide[];
   planId?: string;
+  onDownload?: () => void;
 }) {
   const [downloading, setDownloading] = useState(false);
 
@@ -41,6 +43,7 @@ export default function CarouselPreview({
       }
     } catch {
       alert("Download failed. Try again.");
+      onDownload?.();
     } finally {
       setDownloading(false);
     }

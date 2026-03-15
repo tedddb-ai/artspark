@@ -1,5 +1,13 @@
 # ArtSpark Changelog
 
+## 2026-03-15 (session 7) — Viral Instagram Content Engine
+
+- **Hook-driven captions** — Emotional hooks from parent_note, discussion_questions, teacher_tips, modifications. Engagement CTAs drive comments instead of just saves. Proof points (testimonials, pro tips) add credibility.
+- **New carousel slides** — "Art Words They'll Learn" (vocabulary), "Teacher Tips" (material tips). CTA slide now has engagement question + @littlebayartsandcrafts branding.
+- **"Ready to Post" section** — Unified Instagram package on plan detail page: caption preview with expand/collapse, one-tap copy with "Copied!" feedback, inline carousel preview + download.
+- **Event tracking** — `copy_caption` and `download_carousel` events tracked in Turso for social performance visibility.
+- **Configurable IG handle** — `NEXT_PUBLIC_INSTAGRAM_HANDLE` env var. Defaults to @littlebayartsandcrafts.
+
 ## 2026-03-15 (session 6) — Revenue Optimization
 
 - **Vercel Analytics** — Zero-config traffic visibility, installed and wired into layout

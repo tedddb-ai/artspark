@@ -16,7 +16,8 @@ export default function PlanPageClient({ id }: { id: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPrint, setShowPrint] = useState(false);
-  const [showCarousel, setShowCarousel] = useState(false);
+  const [captionCopied, setCaptionCopied] = useState(false);
+  const [showFullCaption, setShowFullCaption] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -47,12 +48,16 @@ export default function PlanPageClient({ id }: { id: string }) {
     load();
   }, [id]);
 
-  function handlePrint() {
+  function trackEvent(event: string) {
     fetch("/api/plans", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan_id: id, event: "print" }),
+      body: JSON.stringify({ plan_id: id, event }),
     }).catch(() => {});
+  }
+
+  function handlePrint() {
+    trackEvent("print");
     setShowPrint(true);
     setTimeout(() => window.print(), 200);
     setTimeout(() => setShowPrint(false), 1000);
@@ -64,17 +69,17 @@ export default function PlanPageClient({ id }: { id: string }) {
     const caption = generateInstagramCaption(plan, planUrl);
     try {
       await navigator.clipboard.writeText(caption);
-      alert("Caption copied! Paste it in Instagram.");
     } catch {
-      // Fallback for older browsers
       const ta = document.createElement("textarea");
       ta.value = caption;
       document.body.appendChild(ta);
       ta.select();
       document.execCommand("copy");
       document.body.removeChild(ta);
-      alert("Caption copied! Paste it in Instagram.");
     }
+    trackEvent("copy_caption");
+    setCaptionCopied(true);
+    setTimeout(() => setCaptionCopied(false), 2000);
   }
 
   if (loading) {
@@ -98,6 +103,11 @@ export default function PlanPageClient({ id }: { id: string }) {
       ? `${window.location.origin}/plan/${id}`
       : `/plan/${id}`;
 
+  const caption = generateInstagramCaption(plan, planUrl);
+  const captionLines = caption.split("\n");
+  const captionPreview = captionLines.slice(0, 3).join("\n");
+  const slides = generateCarouselSlides(plan, planUrl);
+
   return (
     <div className="space-y-4">
       <Link
@@ -115,14 +125,73 @@ export default function PlanPageClient({ id }: { id: string }) {
         sourceUrl={sourceUrl}
         imagePreview={imagePreview}
         onPrint={handlePrint}
-        onCopyCaption={handleCopyCaption}
-        onShowCarousel={() => setShowCarousel(!showCarousel)}
         planId={id}
       />
 
-      {showCarousel && (
-        <CarouselPreview slides={generateCarouselSlides(plan, planUrl)} planId={id} />
-      )}
+      {/* Ready to Post — Instagram Package */}
+      <section className="rounded-[28px] border-2 border-purple-200 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 p-5 space-y-4">
+        <h3
+          className="text-lg font-bold text-gray-900"
+          style={{ fontFamily: "marker felt, comic sans ms, cursive" }}
+        >
+          Ready to Post
+        </h3>
+
+        {/* Caption Preview + Copy */}
+        <div className="space-y-2">
+          <div
+            className="cursor-pointer rounded-xl bg-white/80 p-3 text-sm text-gray-700 leading-relaxed"
+            onClick={() => setShowFullCaption(!showFullCaption)}
+          >
+            <pre className="whitespace-pre-wrap font-sans">
+              {showFullCaption ? caption : captionPreview + "\n..."}
+            </pre>
+            <button className="mt-1 text-xs font-medium text-purple-600">
+              {showFullCaption ? "Show less" : "Show full caption"}
+            </button>
+          </div>
+          <button
+            onClick={handleCopyCaption}
+            className={`w-full rounded-xl py-2.5 text-sm font-bold transition ${
+              captionCopied
+                ? "bg-green-500 text-white"
+                : "bg-gray-900 text-white hover:bg-gray-800"
+            }`}
+          >
+            {captionCopied ? "Copied!" : "Copy Caption"}
+          </button>
+        </div>
+
+        {/* Carousel Preview + Download */}
+        <CarouselPreview
+          slides={slides}
+          planId={id}
+          onDownload={() => trackEvent("download_carousel")}
+        />
+
+        {/* Post tip */}
+        <p className="text-center text-xs text-gray-500">
+          Tip: Post carousel + paste caption. First 3 lines are your hook — they decide if people read more.
+        </p>
+      </section>
+
+      {/* Other sharing options */}
+      <div className="flex items-center justify-center gap-3">
+        <a
+          href={`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(planUrl)}&description=${encodeURIComponent(`${plan.title} — Free art lesson plan for kids ages 4-6. 60 min, ${plan.mess_level} mess, ${plan.total_estimated_cost}. Full instructions + shopping list.`)}&media=${encodeURIComponent(`${planUrl.split("/plan/")[0]}/api/og/${id}`)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-full bg-red-100 px-4 py-2 text-sm font-medium text-red-800 transition hover:bg-red-200"
+        >
+          Pin It
+        </a>
+        <button
+          onClick={handlePrint}
+          className="rounded-full bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
+        >
+          Print
+        </button>
+      </div>
     </div>
   );
 }

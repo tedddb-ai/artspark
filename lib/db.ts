@@ -145,7 +145,7 @@ export async function deletePlan(id: string): Promise<void> {
 
 // --- Feedback events ---
 // Events: "save", "share_plan", "share_list", "print", "delete", "polish"
-export type PlanEvent = "save" | "share_plan" | "share_list" | "print" | "delete" | "polish";
+export type PlanEvent = "save" | "share_plan" | "share_list" | "print" | "delete" | "polish" | "copy_caption" | "download_carousel";
 
 /** Fire-and-forget event tracking — never throws */
 export async function trackEvent(planId: string, event: PlanEvent): Promise<void> {
