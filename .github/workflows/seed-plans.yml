@@ -1,0 +1,28 @@
+name: Daily Plan Seeding
+
+on:
+  schedule:
+    # Run daily at 06:00 UTC (10pm PST) — fresh content for morning discovery
+    - cron: '0 6 * * *'
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - run: npm ci
+
+      - name: Seed 5 new plans
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: node scripts/seed-daily.mjs
