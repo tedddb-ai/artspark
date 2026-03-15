@@ -90,7 +90,17 @@ export default function Home() {
   const [atLimit, setAtLimit] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setAtLimit(isAtLimit()); }, []);
+  useEffect(() => {
+    // Auto-activate premium from Stripe redirect
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("premium") === "activated") {
+      import("@/lib/usage").then(({ activatePremium }) => {
+        activatePremium();
+        window.history.replaceState({}, "", "/");
+      });
+    }
+    setAtLimit(isAtLimit());
+  }, []);
 
   /** Fire-and-forget event tracking */
   function trackEvent(planId: string, event: string) {
