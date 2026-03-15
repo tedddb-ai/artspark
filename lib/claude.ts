@@ -98,14 +98,16 @@ export async function generateLessonPlan(
     },
   ];
 
-  const response = await anthropic.messages.create({
+  // Stream to avoid serverless timeout — tokens flow, connection stays alive
+  const stream = anthropic.messages.stream({
     model: "claude-sonnet-4-6",
     max_tokens: 4096,
     system: systemPrompt,
     messages,
   });
 
-  const textBlock = response.content.find((block) => block.type === "text");
+  const finalMessage = await stream.finalMessage();
+  const textBlock = finalMessage.content.find((block) => block.type === "text");
   if (!textBlock || textBlock.type !== "text") {
     throw new Error("No text response from Claude");
   }
@@ -128,14 +130,15 @@ export async function generateFromText(
     { role: "user", content: userContent },
   ];
 
-  const response = await anthropic.messages.create({
+  const stream = anthropic.messages.stream({
     model: "claude-sonnet-4-6",
     max_tokens: 4096,
     system: systemPrompt,
     messages,
   });
 
-  const textBlock = response.content.find((block) => block.type === "text");
+  const finalMessage = await stream.finalMessage();
+  const textBlock = finalMessage.content.find((block) => block.type === "text");
   if (!textBlock || textBlock.type !== "text") {
     throw new Error("No text response from Claude");
   }
