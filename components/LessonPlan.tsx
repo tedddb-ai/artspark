@@ -2,6 +2,7 @@
 
 import type { LessonPlanData } from "@/lib/claude";
 import SupplyList from "./SupplyList";
+import { amazonBulkSearchUrl } from "@/lib/affiliate";
 
 const MESS_EMOJI: Record<string, string> = {
   low: "🟢",
@@ -232,6 +233,17 @@ export default function LessonPlan({
           Materials & Supplies
         </h3>
         <SupplyList materials={plan.materials} totalCost={plan.total_estimated_cost} />
+        <a
+          href={amazonBulkSearchUrl(plan.materials)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-[#FF9900] py-3.5 text-sm font-bold text-white shadow-md transition hover:bg-[#e88b00] hover:shadow-lg"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
+            <path d="M1 1.75A.75.75 0 011.75 1h1.628a1.75 1.75 0 011.734 1.51L5.18 3h12.07A1.75 1.75 0 0118.97 5.04l-1.572 7.862a1.75 1.75 0 01-1.716 1.398H6.496a1.75 1.75 0 01-1.716-1.398L3.21 4.51l-.068-.34A.25.25 0 002.878 4H1.75A.75.75 0 011 3.25V1.75zM6 17.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM17.5 17.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+          </svg>
+          Get All Supplies on Amazon — {plan.total_estimated_cost}
+        </a>
       </section>
 
       {/* Step by Step */}
