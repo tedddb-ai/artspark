@@ -2,26 +2,36 @@
 
 ## P1 — Ship Next
 
-- [ ] **Verify Vercel plan (Hobby vs Pro)** — If Hobby, maxDuration=60 is ignored and Opus polish has been silently failing since launch. Check dashboard, upgrade if needed. Size: XS.
-- [ ] **Set APP_SECRET + NEXT_PUBLIC_APP_SECRET in Vercel env** — API key protection is deployed but inactive until env vars are set. Size: XS.
-- [ ] **Add tests for pure functions** — `lib/social.ts`, `lib/taste.ts`, `lib/prompts.ts` are deterministic with zero side effects. Unit tests run in <1s. Catches regressions in hashtag mapping, carousel splitting, taste weighting. Size: M.
-- [ ] **Error boundaries in React** — Any `JSON.parse` crash on client (corrupt plan_json, bad API response) shows white screen. Add React error boundary wrapper with friendly fallback UI. Size: S.
-- [ ] **Fix ensureTable() cold start failure** — If Turso is unreachable at module import, the promise rejects once and ALL subsequent DB calls fail permanently until function recycles. Add retry logic. Size: S.
+- [x] ~~**Verify Vercel plan (Hobby vs Pro)**~~ — Confirmed Hobby. Streaming workaround in place.
+- [x] ~~**Set APP_SECRET + NEXT_PUBLIC_APP_SECRET in Vercel env**~~ — Done.
+- [ ] **Apply streaming fix to /api/generate-text** — Same timeout risk as /api/generate. Currently not streaming. Size: S.
+- [ ] **Add tests for pure functions** — `lib/social.ts`, `lib/taste.ts`, `lib/prompts.ts`, `lib/affiliate.ts`. Size: M.
+- [ ] **Error boundaries in React** — Any `JSON.parse` crash on client shows white screen. Size: S.
+- [ ] **Fix ensureTable() cold start failure** — If Turso unreachable at import, all DB ops fail permanently. Size: S.
 
 ## P2 — Hardening
 
-- [ ] **Extract supply injection into shared function** — Duplicated in /api/generate and /api/generate-text. DRY violation. Size: S.
-- [ ] **Safe JSON parse utility** — `JSON.parse(saved.plan_json)` with no try/catch appears in 5+ locations (client and server). Create `safeParsePlan()` that returns null on failure. Size: S.
-- [ ] **Structured logging on API routes** — Log entry/exit with request ID, duration, success/fail, and Claude token usage. Currently just console.error on failures. Size: M.
-- [ ] **Gallery pagination** — `getAllPlans()` loads every plan's full plan_json blob. At 50+ plans this is multi-MB. Add pagination or at minimum exclude plan_json from the listing query. Size: S.
-- [ ] **Double-tap protection on generate** — Recommendation tap fires generate-text with no debounce. Two quick taps = two API calls. Add `disabled` state while generating. Size: S.
-- [ ] **Split app/page.tsx god component** — 391 lines mixing generation, saving, sharing, polish, errors. Extract into hooks or sub-components before adding more features. Size: M.
+- [ ] **Extract supply injection into shared function** — Duplicated in /api/generate and /api/generate-text. Size: S.
+- [ ] **Safe JSON parse utility** — `JSON.parse(saved.plan_json)` with no try/catch in 5+ locations. Size: S.
+- [ ] **Structured logging on API routes** — Log entry/exit with duration, success/fail, token usage. Size: M.
+- [ ] **Gallery pagination** — `getAllPlans()` loads full plan_json blobs. Size: S.
+- [ ] **Double-tap protection on generate** — No debounce on recommendation tap. Size: S.
+- [ ] **Split app/page.tsx god component** — Now 400+ lines. Size: M.
+- [ ] **Restore richer prompt** — Current prompt is trimmed for speed. Once streaming is stable, can restore quality bar criteria. Size: S.
 
-## P3 — Growth Features (Phase B/C)
+## P3 — Growth Features
 
-- [ ] **Automated carousel image download as ZIP** — Currently downloads 7 individual files. Bundle as ZIP for single download. Size: S.
-- [ ] **TikTok/Reels script generator** — AI-powered (single Claude call per plan): hook → cuts → CTA. Added to plan page. Size: M.
-- [ ] **Post-class feedback ("How did it go?")** — 24-48hr after print event, show a feedback nudge. One tap + optional note. Feeds taste profile. Size: M.
-- [ ] **Affiliate links in material tips** — Amazon Associates ASIN lookup for common art supplies. Size: M.
-- [ ] **PWA + offline library** — Service worker, install prompt, cache plans for offline classroom use. Size: L.
-- [ ] **Share-to-ArtSpark (Web Share Target)** — Browse Instagram → share → ArtSpark opens with URL pre-filled. Requires PWA. Size: S (after PWA).
+- [x] ~~**Affiliate links in material tips**~~ — Amazon search URLs added to supply lists and shared plans.
+- [ ] **TikTok/Reels script generator** — AI-powered: hook → cuts → CTA. Size: M.
+- [ ] **Post-class feedback ("How did it go?")** — Feedback nudge after print. Size: M.
+- [ ] **PWA + offline library** — Service worker, install prompt. Size: L.
+- [ ] **Share-to-ArtSpark (Web Share Target)** — Requires PWA. Size: S.
+- [ ] **Automated carousel image download as ZIP** — Size: S.
+
+## P3b — SEO & Discovery (added 2026-03-14)
+
+- [x] ~~**Dynamic sitemap**~~ — `/sitemap.xml` auto-generates from saved plans.
+- [x] ~~**Homeschool landing page**~~ — `/homeschool` for organic search discovery.
+- [x] ~~**SEO metadata optimization**~~ — Gallery + plan pages optimized for "free art lesson plans" keywords.
+- [ ] **More landing pages** — `/preschool-art`, `/kindergarten-art`, `/daycare-activities` for keyword coverage. Size: S each.
+- [ ] **Blog/content pages** — "Top 10 Spring Art Projects" style roundups from saved plans. Size: M.

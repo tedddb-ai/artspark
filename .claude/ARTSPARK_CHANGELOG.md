@@ -1,5 +1,25 @@
 # ArtSpark Changelog
 
+## 2026-03-14 (session 3) — SEO, Affiliates, Debugging
+
+### Fixed
+- **Turso env var newline** — trailing `\n` in TURSO_DATABASE_URL was silently breaking all builds. Trimmed in code.
+- **Generation timeout** — Sonnet + vision takes ~80s, exceeds Vercel 60s limit. Fixed with streaming keepalive (space chars every 5s keep connection alive).
+- **Removed "Get" button** — paste URL → tap Generate in one step now.
+- **Dropped Opus polish** — was dead on Hobby anyway (10s timeout). Sonnet-only.
+- **API key protection activated** — APP_SECRET env vars set in Vercel.
+
+### Added (by Ted)
+- Amazon affiliate links in all supply lists (`lib/affiliate.ts`)
+- Homeschool landing page (`/homeschool`)
+- Dynamic sitemap (`/sitemap.xml`)
+- SEO metadata optimization on gallery + plan pages
+
+### Verify
+- Paste an Instagram URL → tap Generate → should complete in ~60-80s
+- Save a plan → check Library → plan should persist
+- Share a plan URL → should show rich preview with OG image
+
 ## 2026-03-14 — Social Media Engine + Hardening
 
 **10 commits this session. Major feature expansion + first hardening pass.**
