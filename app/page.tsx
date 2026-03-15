@@ -93,13 +93,24 @@ export default function Home() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    // Owner activation via secret URL
-    const ownerSecret = process.env.NEXT_PUBLIC_OWNER_SECRET;
-    if (ownerSecret && params.get("owner") === ownerSecret) {
-      import("@/lib/usage").then(({ activateOwner }) => {
-        activateOwner();
-        window.location.replace("/");
-      });
+    // Owner activation via secret URL (validated server-side)
+    const ownerParam = params.get("owner");
+    if (ownerParam) {
+      fetch("/api/activate-owner", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ secret: ownerParam }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.ok) {
+            import("@/lib/usage").then(({ activateOwner }) => {
+              activateOwner();
+              window.location.replace("/");
+            });
+          }
+        })
+        .catch(() => {});
       return;
     }
     // Auto-activate premium from Stripe redirect
