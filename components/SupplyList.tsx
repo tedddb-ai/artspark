@@ -5,9 +5,21 @@ import { amazonSearchUrl, amazonBulkSearchUrl } from "@/lib/affiliate";
 interface SupplyListProps {
   materials: { item: string; quantity: string; estimated_cost: string; tip?: string }[];
   totalCost: string;
+  classSize?: number;
 }
 
-export default function SupplyList({ materials, totalCost }: SupplyListProps) {
+/** Parse "$3.50" or "~$5" to a number, returns 0 on failure */
+function parseCost(cost: string): number {
+  const match = cost.match(/\$?([\d.]+)/);
+  return match ? parseFloat(match[1]) || 0 : 0;
+}
+
+export default function SupplyList({ materials, totalCost, classSize }: SupplyListProps) {
+  const perStudentTotal = parseCost(totalCost);
+  const classCost = classSize && classSize > 1 && perStudentTotal > 0
+    ? (perStudentTotal * classSize).toFixed(2)
+    : null;
+
   return (
     <div className="rounded-lg border border-gray-200">
       <div className="divide-y divide-gray-100">
@@ -22,7 +34,7 @@ export default function SupplyList({ materials, totalCost }: SupplyListProps) {
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-800">{mat.item}</span>
                   <a
-                    href={amazonSearchUrl(mat.item)}
+                    href={amazonSearchUrl(mat.item, "supply-list")}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 transition hover:bg-amber-200"
@@ -42,21 +54,28 @@ export default function SupplyList({ materials, totalCost }: SupplyListProps) {
           </div>
         ))}
       </div>
-      <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-4 py-2">
-        <span className="text-sm font-semibold text-gray-700">
-          Estimated Total
-        </span>
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-gray-900">{totalCost}</span>
-          <a
-            href={amazonBulkSearchUrl(materials)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-lg bg-[#FF9900] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#e88b00]"
-          >
-            Shop All on Amazon
-          </a>
+      <div className="border-t border-gray-200 bg-gray-50 px-4 py-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-semibold text-gray-700">
+            Estimated Total
+          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-gray-900">{totalCost}</span>
+            <a
+              href={amazonBulkSearchUrl(materials, "shop-all-button")}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg bg-[#FF9900] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#e88b00]"
+            >
+              Shop All on Amazon
+            </a>
+          </div>
         </div>
+        {classCost && (
+          <p className="mt-1 text-xs text-gray-500">
+            For {classSize} students: ~${classCost}
+          </p>
+        )}
       </div>
       <p className="px-4 py-1.5 text-[10px] text-gray-400">
         As an Amazon Associate, ArtSpark earns from qualifying purchases.

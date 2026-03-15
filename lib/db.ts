@@ -46,6 +46,18 @@ async function ensureTable() {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS usage_tracking (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id TEXT NOT NULL,
+      action TEXT NOT NULL DEFAULT 'generate',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await db.execute(`
+    CREATE INDEX IF NOT EXISTS idx_usage_session_month
+    ON usage_tracking (session_id, created_at)
+  `);
 }
 
 // Initialize table on first import
@@ -212,6 +224,38 @@ export async function getTasteData(): Promise<{
     plans: planResult.rows as unknown as { id: string; plan_json: string; mess_level: string | null; tags: string | null; title: string }[],
     events: eventResult.rows as unknown as { plan_id: string; event: string }[],
   };
+}
+
+// --- Server-side usage tracking ---
+const FREE_PLAN_LIMIT = 3;
+
+/** Count generations for a session this month */
+export async function getServerUsageCount(sessionId: string): Promise<number> {
+  await tableReady;
+  const db = getDb();
+  const result = await db.execute({
+    sql: `SELECT COUNT(*) as cnt FROM usage_tracking
+          WHERE session_id = ? AND action = 'generate'
+          AND created_at >= date('now', 'start of month')`,
+    args: [sessionId],
+  });
+  return (result.rows[0]?.cnt as number) || 0;
+}
+
+/** Record a generation for a session */
+export async function trackGeneration(sessionId: string): Promise<void> {
+  await tableReady;
+  const db = getDb();
+  await db.execute({
+    sql: "INSERT INTO usage_tracking (session_id, action) VALUES (?, 'generate')",
+    args: [sessionId],
+  });
+}
+
+/** Check if session is at the free limit (server-side) */
+export async function isAtServerLimit(sessionId: string): Promise<boolean> {
+  const count = await getServerUsageCount(sessionId);
+  return count >= FREE_PLAN_LIMIT;
 }
 
 /** Get the most common materials from saved+shared plans (positive signal) */

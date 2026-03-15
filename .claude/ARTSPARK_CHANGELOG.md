@@ -1,5 +1,14 @@
 # ArtSpark Changelog
 
+## 2026-03-15 (session 6) — Revenue Optimization
+
+- **Vercel Analytics** — Zero-config traffic visibility, installed and wired into layout
+- **Owner bypass** — Secret URL activation (`/?owner=SECRET`) for Ted + Amy, never hits paywall
+- **Server-side usage tracking** — `usage_tracking` table in Turso, enforced in both generate routes via session cookie. Closes the localStorage bypass vulnerability
+- **UTM tracking on affiliate links** — Campaign params on all Amazon links (supply-list, shop-all-button, plan-cta, email-share, text-share)
+- **Annual pricing tier** — $79/yr option (save 34%) with toggle in UpgradeWall. Defaults to annual
+- **Class cost calculator** — SupplyList shows "For N students: ~$X" when class size available
+
 ## 2026-03-15 (session 5) — Reliability Hardening
 
 - **Streaming for /api/generate-text** — ReadableStream + keepalive pings prevent Vercel Hobby timeouts (matches /api/generate pattern)

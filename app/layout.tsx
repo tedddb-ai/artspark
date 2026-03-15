@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -76,6 +77,7 @@ export default function RootLayout({
         <footer className="mx-auto max-w-lg px-4 pb-6 text-center text-[10px] text-gray-400">
           <p>As an Amazon Associate, ArtSpark earns from qualifying purchases.</p>
         </footer>
+        <Analytics />
       </body>
     </html>
   );

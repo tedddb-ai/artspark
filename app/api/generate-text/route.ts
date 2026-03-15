@@ -1,15 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { buildSystemPrompt } from "@/lib/prompts";
-import { getProfile, getFrequentMaterials } from "@/lib/db";
+import { getProfile, getFrequentMaterials, isAtServerLimit, trackGeneration } from "@/lib/db";
 import { checkAuth } from "@/lib/auth";
 import { safeJsonParse } from "@/lib/safe-json";
+import { getSessionId, sessionCookieHeader } from "@/lib/session";
 
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   const authError = checkAuth(request);
   if (authError) return authError;
+
+  // Server-side usage enforcement
+  const { sid, isNew } = await getSessionId();
+  const ownerSecret = process.env.OWNER_SECRET;
+  const isOwner = ownerSecret && request.headers.get("x-owner") === ownerSecret;
+  if (!isOwner && await isAtServerLimit(sid)) {
+    return NextResponse.json(
+      { error: "Monthly plan limit reached. Upgrade to premium for unlimited plans." },
+      { status: 429 }
+    );
+  }
 
   try {
     const body = await request.json();
@@ -82,6 +94,7 @@ export async function POST(request: NextRequest) {
 
             const result = safeJsonParse(jsonStr);
             if (result.ok) {
+              await trackGeneration(sid);
               controller.enqueue(
                 encoder.encode(JSON.stringify({ plan: result.data }))
               );
@@ -105,9 +118,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return new Response(stream, {
-      headers: { "Content-Type": "application/json" },
-    });
+    const headers: HeadersInit = { "Content-Type": "application/json" };
+    if (isNew) headers["Set-Cookie"] = sessionCookieHeader(sid);
+    return new Response(stream, { headers });
   } catch (error) {
     console.error("Generate-text error:", error);
     return NextResponse.json(

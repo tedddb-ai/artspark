@@ -26,8 +26,17 @@
 - [x] ~~**Autonomous content seeding**~~ — GitHub Action seeds 5 Opus plans daily.
 - [x] ~~**Amazon Associates setup**~~ — Live with tag `artspark2005-20`.
 - [x] ~~**Stripe live payments**~~ — Product, price, payment link all live. Daily payouts to Wells Fargo.
-- [ ] **Pinterest API auto-pinning** — Autonomous pin posting for each new plan. Size: M.
-- [ ] **More landing pages** — `/preschool-art`, `/kindergarten-art`, `/daycare-activities`. Size: S each.
+- [x] ~~**Vercel Analytics**~~ — Traffic visibility, zero-config.
+- [x] ~~**Owner bypass**~~ — Secret URL activation for Ted + Amy.
+- [x] ~~**Server-side usage enforcement**~~ — Turso-backed session tracking, closes localStorage bypass.
+- [x] ~~**UTM tracking on affiliate links**~~ — Campaign params on all Amazon links.
+- [x] ~~**Annual pricing tier**~~ — $79/yr with toggle in UpgradeWall.
+- [x] ~~**Class cost calculator**~~ — Per-class cost estimate in SupplyList.
+- [ ] **Pinterest API auto-pinning** — Autonomous pin posting for each new plan. Size: M. → Cowork.
+- [ ] **Instagram auto-carousel posting** — Meta Graph API auto-posting. Size: M. → Cowork.
+- [ ] **Email capture + weekly auto-email** — Turso table + Resend + GitHub Action. Size: M. → Cowork.
+- [ ] **More landing pages** — `/preschool-art`, `/kindergarten-art`, `/daycare-activities`. Size: S each. → Cowork.
+- [ ] **Footer + About page + Privacy/Terms** — Trust signals for conversion. Size: S. → Cowork.
 - [ ] **Blog/content roundups** — "Top 10 Spring Art Projects" from saved plans. Size: M.
 - [ ] **TikTok/Reels script generator** — AI-powered: hook → cuts → CTA. Size: M.
 - [ ] **Post-class feedback ("How did it go?")** — Feedback nudge after print. Size: M.

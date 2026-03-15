@@ -234,7 +234,7 @@ export default function LessonPlan({
         </h3>
         <SupplyList materials={plan.materials} totalCost={plan.total_estimated_cost} />
         <a
-          href={amazonBulkSearchUrl(plan.materials)}
+          href={amazonBulkSearchUrl(plan.materials, "plan-cta")}
           target="_blank"
           rel="noopener noreferrer"
           className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-[#FF9900] py-3.5 text-sm font-bold text-white shadow-md transition hover:bg-[#e88b00] hover:shadow-lg"

@@ -1,6 +1,7 @@
 const FREE_PLAN_LIMIT = 3;
 const STORAGE_KEY = "artspark_plan_count";
 const PREMIUM_KEY = "artspark_premium";
+const OWNER_KEY = "artspark_owner";
 
 /** Get current month's plan count from localStorage */
 export function getPlanCount(): number {
@@ -34,10 +35,23 @@ export function isAtLimit(): boolean {
   return !isPremium() && getPlanCount() >= FREE_PLAN_LIMIT;
 }
 
+/** Check if user is owner (never hits limits) */
+export function isOwner(): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(OWNER_KEY) === "true";
+}
+
+/** Activate owner mode (called via secret URL param) */
+export function activateOwner(): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(OWNER_KEY, "true");
+  localStorage.setItem(PREMIUM_KEY, "true");
+}
+
 /** Check if user is premium */
 export function isPremium(): boolean {
   if (typeof window === "undefined") return false;
-  return localStorage.getItem(PREMIUM_KEY) === "true";
+  return localStorage.getItem(PREMIUM_KEY) === "true" || isOwner();
 }
 
 /** Activate premium (called after successful payment) */
