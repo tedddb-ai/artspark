@@ -7,6 +7,7 @@ import PrintView from "@/components/PrintView";
 import CarouselPreview from "@/components/CarouselPreview";
 import type { LessonPlanData } from "@/lib/claude";
 import { generateInstagramCaption, generateCarouselSlides } from "@/lib/social";
+import { safeJsonParse } from "@/lib/safe-json";
 
 export default function PlanPageClient({ id }: { id: string }) {
   const [plan, setPlan] = useState<LessonPlanData | null>(null);
@@ -26,7 +27,13 @@ export default function PlanPageClient({ id }: { id: string }) {
         return;
       }
       const data = await res.json();
-      setPlan(JSON.parse(data.plan_json));
+      const result = safeJsonParse<LessonPlanData>(data.plan_json);
+      if (!result.ok) {
+        setError("Could not load plan data");
+        setLoading(false);
+        return;
+      }
+      setPlan(result.data);
       setSourceUrl(data.source_url || undefined);
       if (data.source_image_base64) {
         setImagePreview(

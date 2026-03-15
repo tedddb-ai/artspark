@@ -1,5 +1,12 @@
 # ArtSpark Changelog
 
+## 2026-03-15 (session 5) — Reliability Hardening
+
+- **Streaming for /api/generate-text** — ReadableStream + keepalive pings prevent Vercel Hobby timeouts (matches /api/generate pattern)
+- **safeJsonParse utility** — Discriminated union wrapper replaces bare JSON.parse at 5 critical sites (both API routes, both client handlers, plan detail page)
+- **Global error boundary** — app/error.tsx catches unhandled React errors with Try Again + Go Home UI
+- **404 page** — app/not-found.tsx for missing routes
+
 ## 2026-03-15 (session 4) — Revenue Machine
 
 **14 commits. Full monetization stack shipped. ArtSpark now earns money autonomously.**

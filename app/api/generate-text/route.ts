@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateFromText } from "@/lib/claude";
+import Anthropic from "@anthropic-ai/sdk";
+import { buildSystemPrompt } from "@/lib/prompts";
 import { getProfile, getFrequentMaterials } from "@/lib/db";
 import { checkAuth } from "@/lib/auth";
+import { safeJsonParse } from "@/lib/safe-json";
 
 export const maxDuration = 60;
 
@@ -38,17 +40,81 @@ export async function POST(request: NextRequest) {
       }
     } catch { /* proceed without */ }
 
-    const plan = await generateFromText(
-      description,
-      enrichedNotes || undefined,
-      classSize
-    );
+    const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "API key not configured" },
+        { status: 500 }
+      );
+    }
 
-    return NextResponse.json({ plan });
+    const anthropic = new Anthropic({ apiKey });
+    const userContent = `Create a lesson plan for this art project concept:\n\n${description}${enrichedNotes ? `\n\nAdditional notes: ${enrichedNotes}` : ""}`;
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+        try {
+          const messageStream = anthropic.messages.stream({
+            model: "claude-sonnet-4-5-20250929",
+            max_tokens: 4096,
+            system: buildSystemPrompt(classSize),
+            messages: [{ role: "user", content: userContent }],
+          });
+
+          // Keepalive pings to prevent Vercel timeout
+          const keepalive = setInterval(() => {
+            controller.enqueue(encoder.encode(" "));
+          }, 5000);
+
+          const finalMessage = await messageStream.finalMessage();
+          clearInterval(keepalive);
+
+          const textBlock = finalMessage.content.find((b) => b.type === "text");
+          if (!textBlock || textBlock.type !== "text") {
+            controller.enqueue(
+              encoder.encode(JSON.stringify({ error: "No response from AI" }))
+            );
+          } else {
+            let jsonStr = textBlock.text.trim();
+            const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+            if (jsonMatch) jsonStr = jsonMatch[1].trim();
+
+            const result = safeJsonParse(jsonStr);
+            if (result.ok) {
+              controller.enqueue(
+                encoder.encode(JSON.stringify({ plan: result.data }))
+              );
+            } else {
+              controller.enqueue(
+                encoder.encode(
+                  JSON.stringify({ error: "AI returned invalid JSON" })
+                )
+              );
+            }
+          }
+        } catch (err) {
+          const msg =
+            err instanceof Error ? err.message : "Generation failed";
+          controller.enqueue(
+            new TextEncoder().encode(JSON.stringify({ error: msg }))
+          );
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("Generate-text error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Generation failed" },
+      {
+        error:
+          error instanceof Error ? error.message : "Generation failed",
+      },
       { status: 500 }
     );
   }

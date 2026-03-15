@@ -4,15 +4,15 @@
 
 - [x] ~~**Verify Vercel plan (Hobby vs Pro)**~~ — Confirmed Hobby. Streaming workaround in place.
 - [x] ~~**Set APP_SECRET + NEXT_PUBLIC_APP_SECRET in Vercel env**~~ — Done.
-- [ ] **Apply streaming fix to /api/generate-text** — Same timeout risk as /api/generate. Currently not streaming. Size: S.
+- [x] ~~**Apply streaming fix to /api/generate-text**~~ — ReadableStream + keepalive pings, matches /api/generate pattern.
 - [ ] **Add tests for pure functions** — `lib/social.ts`, `lib/taste.ts`, `lib/prompts.ts`, `lib/affiliate.ts`. Size: M.
-- [ ] **Error boundaries in React** — Any `JSON.parse` crash on client shows white screen. Size: S.
+- [x] ~~**Error boundaries in React**~~ — Global error.tsx + not-found.tsx + safeJsonParse at all critical sites.
 - [ ] **Fix ensureTable() cold start failure** — If Turso unreachable at import, all DB ops fail permanently. Size: S.
 
 ## P2 — Hardening
 
 - [ ] **Extract supply injection into shared function** — Duplicated in /api/generate and /api/generate-text. Size: S.
-- [ ] **Safe JSON parse utility** — `JSON.parse(saved.plan_json)` with no try/catch in 5+ locations. Size: S.
+- [x] ~~**Safe JSON parse utility**~~ — `lib/safe-json.ts` with discriminated union return type.
 - [ ] **Structured logging on API routes** — Log entry/exit with duration, success/fail, token usage. Size: M.
 - [ ] **Gallery pagination** — `getAllPlans()` loads full plan_json blobs. Size: S.
 - [ ] **Double-tap protection on generate** — No debounce on recommendation tap. Size: S.

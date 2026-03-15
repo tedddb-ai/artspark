@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 import InputForm from "@/components/InputForm";
 import LessonPlan from "@/components/LessonPlan";
 import Recommendations from "@/components/Recommendations";
+import { safeJsonParse } from "@/lib/safe-json";
 import type { LessonPlanData } from "@/lib/claude";
 import { authHeaders } from "@/lib/auth";
 import { amazonSearchUrl, amazonBulkSearchUrl } from "@/lib/affiliate";
@@ -133,7 +134,9 @@ export default function Home() {
         body: formData,
       });
       const text = await res.text();
-      const data = JSON.parse(text.trim());
+      const parsed = safeJsonParse<{ plan: LessonPlanData; error?: string }>(text.trim());
+      if (!parsed.ok) throw new Error("Invalid response from server");
+      const data = parsed.data;
 
       if (data.error) {
         throw new Error(data.error);
@@ -203,10 +206,13 @@ export default function Home() {
         headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ description: `${title}\n\n${overview}` }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      const parsed = safeJsonParse<{ plan: LessonPlanData; error?: string }>(text.trim());
+      if (!parsed.ok) throw new Error("Invalid response from server");
+      const data = parsed.data;
 
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to generate lesson plan");
+      if (data.error) {
+        throw new Error(data.error);
       }
 
       setGenerated({ plan: data.plan });

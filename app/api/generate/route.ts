@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { buildSystemPrompt, buildUserPrompt } from "@/lib/prompts";
 import { getProfile, getFrequentMaterials } from "@/lib/db";
 import { checkAuth } from "@/lib/auth";
+import { safeJsonParse } from "@/lib/safe-json";
 
 export const maxDuration = 300;
 
@@ -90,7 +91,12 @@ export async function POST(request: NextRequest) {
             let jsonStr = textBlock.text.trim();
             const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
             if (jsonMatch) jsonStr = jsonMatch[1].trim();
-            controller.enqueue(new TextEncoder().encode(JSON.stringify({ plan: JSON.parse(jsonStr) })));
+            const result = safeJsonParse(jsonStr);
+            if (result.ok) {
+              controller.enqueue(new TextEncoder().encode(JSON.stringify({ plan: result.data })));
+            } else {
+              controller.enqueue(new TextEncoder().encode(JSON.stringify({ error: "AI returned invalid JSON" })));
+            }
           }
         } catch (err) {
           const msg = err instanceof Error ? err.message : "Generation failed";
