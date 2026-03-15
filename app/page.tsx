@@ -89,10 +89,16 @@ export default function Home() {
   const [savedPlanId, setSavedPlanId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [atLimit, setAtLimit] = useState(false);
+  const [premium, setPremium] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Check existing premium/owner status first
+    setPremium(isPremium());
+    setAtLimit(isAtLimit());
+
     const params = new URLSearchParams(window.location.search);
+
     // Owner activation via secret URL (validated server-side)
     const ownerParam = params.get("owner");
     if (ownerParam) {
@@ -106,22 +112,26 @@ export default function Home() {
           if (data.ok) {
             import("@/lib/usage").then(({ activateOwner }) => {
               activateOwner();
-              window.location.replace("/");
+              setPremium(true);
+              setAtLimit(false);
+              window.history.replaceState({}, "", "/");
             });
           }
         })
         .catch(() => {});
       return;
     }
+
     // Auto-activate premium from Stripe redirect
     if (params.get("premium") === "activated") {
       import("@/lib/usage").then(({ activatePremium }) => {
         activatePremium();
-        window.location.replace("/");
+        setPremium(true);
+        setAtLimit(false);
+        window.history.replaceState({}, "", "/");
       });
       return;
     }
-    setAtLimit(isAtLimit());
   }, []);
 
   /** Fire-and-forget event tracking */
@@ -343,7 +353,7 @@ export default function Home() {
               <h2 className="text-xl font-semibold text-gray-900">
                 Add your inspiration photo
               </h2>
-              {!isPremium() && (
+              {!premium && (
                 <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
                   {remainingFreePlans()} free left
                 </span>
