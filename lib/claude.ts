@@ -100,7 +100,7 @@ export async function generateLessonPlan(
 
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 8192,
+    max_tokens: 4096,
     system: systemPrompt,
     messages,
   });
@@ -130,7 +130,7 @@ export async function generateFromText(
 
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 8192,
+    max_tokens: 4096,
     system: systemPrompt,
     messages,
   });
