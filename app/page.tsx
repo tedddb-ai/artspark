@@ -83,7 +83,6 @@ export default function Home() {
   const [isSaving, setIsSaving] = useState(false);
   const [savedPlanId, setSavedPlanId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isPolishing, setIsPolishing] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
 
   /** Fire-and-forget event tracking */
@@ -93,28 +92,6 @@ export default function Home() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ plan_id: planId, event }),
     }).catch(() => {});
-  }
-
-  /** Background Opus polish — upgrades the plan silently */
-  async function polishInBackground(draft: LessonPlanData) {
-    setIsPolishing(true);
-    try {
-      const res = await fetch("/api/polish", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ draft }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.plan) {
-          setGenerated({ plan: data.plan });
-        }
-      }
-    } catch {
-      // Polish failed — draft stands, no user-facing error
-    } finally {
-      setIsPolishing(false);
-    }
   }
 
   async function handleGenerate(input: GeneratePayload) {
@@ -147,8 +124,6 @@ export default function Home() {
       setGenerated({ plan: data.plan });
       setSourceUrl(input.sourceUrl);
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
-      // Fire Opus polish in background — upgrades the plan silently
-      polishInBackground(data.plan);
     } catch (err) {
       setGenerated(null);
       const raw = err instanceof Error ? err.message : "";
@@ -216,7 +191,6 @@ export default function Home() {
 
       setGenerated({ plan: data.plan });
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
-      polishInBackground(data.plan);
     } catch (err) {
       setGenerated(null);
       const raw = err instanceof Error ? err.message : "";
@@ -336,17 +310,9 @@ export default function Home() {
       {generated ? (
         <section ref={resultRef} className="space-y-4 rounded-[28px] border border-gray-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">
-                Your lesson plan
-              </h2>
-              {isPolishing && (
-                <p className="mt-0.5 flex items-center gap-1.5 text-xs text-crayon-blue">
-                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-crayon-blue border-t-transparent" />
-                  Enhancing with Opus...
-                </p>
-              )}
-            </div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Your lesson plan
+            </h2>
             <Link
               href="/library"
               className="shrink-0 rounded-full bg-gray-100 px-3 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-200"

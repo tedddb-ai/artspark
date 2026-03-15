@@ -28,13 +28,18 @@ FIELD GUIDELINES:
 - tags: 5-8 searchable tags including technique, materials, and theme.
 - season_tags: Applicable season or holiday. Empty array if none.
 
-WHAT MAKES A GREAT PLAN:
-- The title makes a parent smile when they see it on the fridge
-- A teacher reads the prep steps and knows exactly what to buy and set up
-- The steps are so clear that a nervous substitute teacher feels confident
-- The shopping list has real store names and substitutions, not just item names
-- Kids actually learn something specific (a technique, a concept, a vocabulary word)
-- The parent note makes a parent ask their kid about the project at dinner
+QUALITY BAR — every plan must hit ALL of these:
+- Title makes a parent smile when they see it on the fridge. Be creative and specific, not generic.
+- Overview hooks a teacher in 2 sentences — mention the technique AND the finished product.
+- Prep steps are so specific the teacher can hand them to an aide: exact quantities, exact sizes, exact colors per table.
+- Teacher tips include ACTUAL WORDS TO SAY OUT LOUD — not "introduce the concept" but "Say: Today we're going to make fish out of paper plates! Has anyone seen a fish? What colors are fish?"
+- Each schedule phase ends with a TRANSITION CUE — how the teacher moves kids to the next activity.
+- Step-by-step reads like a cooking recipe: "Dip the sponge in blue paint. Press firmly onto the paper. Lift straight up — don't drag." One verb per step.
+- Clean-up steps name WHO does WHAT: "Kids: put brushes in the water cup. Teacher: collect artwork onto the drying rack. Aide: wipe tables with damp sponges."
+- Material tips name REAL STORES with real prices: "Washable tempera paint, 16oz — $3.49 at Walmart, $1.25 at Dollar Tree (smaller bottle), or $8.99/6-pack on Amazon."
+- Discussion questions are open-ended and age-appropriate: "What was the hardest part?" not "Did you like it?"
+- Parent note is warm and specific: "Ask your child to show you the texture they made by pressing bubble wrap into the paint" — not "Your child made art today."
+- Safety notes are specific to THIS project: "Glitter near eyes" not "Supervise children."
 
 DO NOT echo the example values from the schema below. Generate real, specific content for every field.
 
