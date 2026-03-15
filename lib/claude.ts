@@ -100,7 +100,7 @@ export async function generateLessonPlan(
 
   // Stream to avoid serverless timeout — tokens flow, connection stays alive
   const stream = anthropic.messages.stream({
-    model: "claude-sonnet-4-6",
+    model: "claude-sonnet-4-5-20250929",
     max_tokens: 4096,
     system: systemPrompt,
     messages,
@@ -131,7 +131,7 @@ export async function generateFromText(
   ];
 
   const stream = anthropic.messages.stream({
-    model: "claude-sonnet-4-6",
+    model: "claude-sonnet-4-5-20250929",
     max_tokens: 4096,
     system: systemPrompt,
     messages,
