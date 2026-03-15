@@ -1,5 +1,32 @@
 # ArtSpark Changelog
 
+## 2026-03-15 (session 4) — Revenue Machine
+
+**14 commits. Full monetization stack shipped. ArtSpark now earns money autonomously.**
+
+### Revenue Infrastructure
+- **Amazon Associates** — Live (`artspark2005-20`). "Buy" button on every supply item + "Shop All on Amazon" CTA. Affiliate links in shared shopping lists (email/text). Disclosure added for compliance.
+- **Stripe subscriptions** — Live product, $10/mo price, payment link. Auto-activates premium on redirect. Daily payouts to Wells Fargo.
+- **Premium tier + usage gating** — Free users get 3 plans/month, then upgrade wall. Counter badge shows remaining plans.
+
+### Autonomous Content Engine
+- **Daily plan seeding** — GitHub Action runs at 06:00 UTC, generates 5 Opus-quality plans from 40+ rotating SEO topics. Each plan = new indexed page with affiliate links.
+- **Gallery seeded** — 16+ Opus plans live targeting high-traffic search terms (watercolor, paper plate animals, salt dough, etc.)
+
+### SEO & Discovery
+- **Homeschool landing page** — `/homeschool` targeting "free art curriculum for homeschool"
+- **Dynamic sitemap** — Auto-includes all plan pages
+- **robots.txt** — Points Google to sitemap
+- **SEO metadata** — Plan pages + gallery optimized for "free art lesson plan" keywords
+- **OG image CTA** — "FREE Lesson Plan + Shopping List" badge on social previews
+- **Social post templates** — Ready-to-paste posts for Facebook, Reddit, Pinterest
+
+### Verify
+- Visit https://artspark-alpha.vercel.app/gallery → should show 16+ plans
+- Click any supply item "Buy" button → should go to Amazon with `tag=artspark2005-20` in URL
+- Generate 3 plans → should see upgrade wall on 4th attempt
+- Upgrade wall "Upgrade Now" button → should open live Stripe checkout
+
 ## 2026-03-14 (session 3) — SEO, Affiliates, Debugging
 
 ### Fixed

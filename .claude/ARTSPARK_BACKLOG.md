@@ -22,10 +22,16 @@
 ## P3 — Growth Features
 
 - [x] ~~**Affiliate links in material tips**~~ — Amazon search URLs added to supply lists and shared plans.
+- [x] ~~**Premium tier + usage gating**~~ — 3 free plans/month, $10/mo Stripe subscription.
+- [x] ~~**Autonomous content seeding**~~ — GitHub Action seeds 5 Opus plans daily.
+- [x] ~~**Amazon Associates setup**~~ — Live with tag `artspark2005-20`.
+- [x] ~~**Stripe live payments**~~ — Product, price, payment link all live. Daily payouts to Wells Fargo.
+- [ ] **Pinterest API auto-pinning** — Autonomous pin posting for each new plan. Size: M.
+- [ ] **More landing pages** — `/preschool-art`, `/kindergarten-art`, `/daycare-activities`. Size: S each.
+- [ ] **Blog/content roundups** — "Top 10 Spring Art Projects" from saved plans. Size: M.
 - [ ] **TikTok/Reels script generator** — AI-powered: hook → cuts → CTA. Size: M.
 - [ ] **Post-class feedback ("How did it go?")** — Feedback nudge after print. Size: M.
 - [ ] **PWA + offline library** — Service worker, install prompt. Size: L.
-- [ ] **Share-to-ArtSpark (Web Share Target)** — Requires PWA. Size: S.
 - [ ] **Automated carousel image download as ZIP** — Size: S.
 
 ## P3b — SEO & Discovery (added 2026-03-14)
@@ -33,5 +39,6 @@
 - [x] ~~**Dynamic sitemap**~~ — `/sitemap.xml` auto-generates from saved plans.
 - [x] ~~**Homeschool landing page**~~ — `/homeschool` for organic search discovery.
 - [x] ~~**SEO metadata optimization**~~ — Gallery + plan pages optimized for "free art lesson plans" keywords.
-- [ ] **More landing pages** — `/preschool-art`, `/kindergarten-art`, `/daycare-activities` for keyword coverage. Size: S each.
-- [ ] **Blog/content pages** — "Top 10 Spring Art Projects" style roundups from saved plans. Size: M.
+- [x] ~~**robots.txt**~~ — Points crawlers to sitemap.
+- [x] ~~**OG image CTA badge**~~ — "FREE Lesson Plan + Shopping List" on social previews.
+- [x] ~~**Amazon Associates disclosure**~~ — Required compliance text on supply lists + footer.
