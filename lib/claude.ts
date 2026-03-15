@@ -101,7 +101,6 @@ export async function generateLessonPlan(
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-5-20250929",
     max_tokens: 8192,
-    thinking: { type: "enabled", budget_tokens: 2048 },
     system: systemPrompt,
     messages,
   });
@@ -111,27 +110,7 @@ export async function generateLessonPlan(
     throw new Error("No text response from Claude");
   }
 
-  // Try parsing; on failure, retry once with a JSON-only nudge
-  try {
-    return parsePlan(textBlock.text);
-  } catch (firstError) {
-    console.warn("First parse failed, retrying:", firstError);
-    const retry = await anthropic.messages.create({
-      model: "claude-sonnet-4-5-20250929",
-      max_tokens: 8192,
-      system: systemPrompt,
-      messages: [
-        ...messages,
-        { role: "assistant", content: textBlock.text },
-        { role: "user", content: "That response was not valid JSON. Please respond with ONLY the valid JSON object, no markdown fences, no explanation." },
-      ],
-    });
-    const retryText = retry.content.find((b) => b.type === "text");
-    if (!retryText || retryText.type !== "text") {
-      throw new Error("No text response on retry");
-    }
-    return parsePlan(retryText.text);
-  }
+  return parsePlan(textBlock.text);
 }
 
 /** Text-only generation — no image needed. Used for recommendations. */
@@ -152,7 +131,6 @@ export async function generateFromText(
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-5-20250929",
     max_tokens: 8192,
-    thinking: { type: "enabled", budget_tokens: 2048 },
     system: systemPrompt,
     messages,
   });
@@ -162,25 +140,6 @@ export async function generateFromText(
     throw new Error("No text response from Claude");
   }
 
-  try {
-    return parsePlan(textBlock.text);
-  } catch (firstError) {
-    console.warn("First parse failed, retrying:", firstError);
-    const retry = await anthropic.messages.create({
-      model: "claude-sonnet-4-5-20250929",
-      max_tokens: 8192,
-      system: systemPrompt,
-      messages: [
-        ...messages,
-        { role: "assistant", content: textBlock.text },
-        { role: "user", content: "That response was not valid JSON. Please respond with ONLY the valid JSON object, no markdown fences, no explanation." },
-      ],
-    });
-    const retryText = retry.content.find((b) => b.type === "text");
-    if (!retryText || retryText.type !== "text") {
-      throw new Error("No text response on retry");
-    }
-    return parsePlan(retryText.text);
-  }
+  return parsePlan(textBlock.text);
 }
 
