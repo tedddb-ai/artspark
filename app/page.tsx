@@ -115,10 +115,11 @@ export default function Home() {
         headers: authHeaders(),
         body: formData,
       });
-      const data = await res.json();
+      const text = await res.text();
+      const data = JSON.parse(text.trim());
 
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to generate lesson plan");
+      if (data.error) {
+        throw new Error(data.error);
       }
 
       setGenerated({ plan: data.plan });
