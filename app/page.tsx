@@ -98,15 +98,17 @@ export default function Home() {
     if (ownerSecret && params.get("owner") === ownerSecret) {
       import("@/lib/usage").then(({ activateOwner }) => {
         activateOwner();
-        window.history.replaceState({}, "", "/");
+        window.location.replace("/");
       });
+      return;
     }
     // Auto-activate premium from Stripe redirect
     if (params.get("premium") === "activated") {
       import("@/lib/usage").then(({ activatePremium }) => {
         activatePremium();
-        window.history.replaceState({}, "", "/");
+        window.location.replace("/");
       });
+      return;
     }
     setAtLimit(isAtLimit());
   }, []);
