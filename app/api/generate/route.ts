@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateLessonPlan } from "@/lib/claude";
+import Anthropic from "@anthropic-ai/sdk";
+import { buildSystemPrompt, buildUserPrompt } from "@/lib/prompts";
 import { getProfile, getFrequentMaterials } from "@/lib/db";
 import { checkAuth } from "@/lib/auth";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
   const authError = checkAuth(request);
@@ -28,40 +29,81 @@ export async function POST(request: NextRequest) {
       base64 = imageBase64Input;
       mediaType = mediaTypeInput as typeof mediaType;
     } else {
-      return NextResponse.json(
-        { error: "No image provided" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No image provided" }, { status: 400 });
     }
 
-    // Inject supply context: explicit profile first, fall back to inferred supply memory
+    // Supply context
     let enrichedNotes = notes || "";
     let classSize = 15;
     try {
       const profile = await getProfile();
       if (profile && profile.supplies.length > 0) {
         classSize = profile.class_size;
-        const supplyNote = `\n\nThis teacher's classroom already has: ${profile.supplies.join(", ")}. Class size: ${classSize} kids. Prefer these materials when possible. Only suggest buying new items when the project truly requires something not listed.`;
-        enrichedNotes = (enrichedNotes + supplyNote).trim();
+        enrichedNotes = (enrichedNotes + `\n\nClassroom supplies: ${profile.supplies.join(", ")}. Class size: ${classSize}.`).trim();
       } else {
-        // Fall back to inferred supply memory
         const knownSupplies = await getFrequentMaterials(15);
         if (knownSupplies.length >= 3) {
-          const supplyNote = `\n\nThis teacher's classroom already has: ${knownSupplies.join(", ")}. Prefer these materials when possible. Only suggest buying new items when the project truly requires something she doesn't have.`;
-          enrichedNotes = (enrichedNotes + supplyNote).trim();
+          enrichedNotes = (enrichedNotes + `\n\nTeacher has: ${knownSupplies.join(", ")}.`).trim();
         }
       }
-    } catch { /* supply context unavailable — proceed without */ }
+    } catch { /* proceed without */ }
 
-    const plan = await generateLessonPlan(
-      base64,
-      mediaType,
-      enrichedNotes || undefined,
-      caption || undefined,
-      classSize
-    );
+    const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+    if (!apiKey) {
+      return NextResponse.json({ error: "API key not configured" }, { status: 500 });
+    }
 
-    return NextResponse.json({ plan });
+    const anthropic = new Anthropic({ apiKey });
+
+    // Stream response to prevent serverless timeout
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          const messageStream = anthropic.messages.stream({
+            model: "claude-sonnet-4-5-20250929",
+            max_tokens: 4096,
+            system: buildSystemPrompt(classSize),
+            messages: [
+              {
+                role: "user",
+                content: [
+                  { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
+                  { type: "text", text: buildUserPrompt(enrichedNotes || undefined, caption || undefined, classSize) },
+                ],
+              },
+            ],
+          });
+
+          // Send keepalive pings while waiting for tokens
+          const keepalive = setInterval(() => {
+            controller.enqueue(new TextEncoder().encode(" "));
+          }, 5000);
+
+          const finalMessage = await messageStream.finalMessage();
+          clearInterval(keepalive);
+
+          const textBlock = finalMessage.content.find((b) => b.type === "text");
+          if (!textBlock || textBlock.type !== "text") {
+            controller.enqueue(new TextEncoder().encode(JSON.stringify({ error: "No response from AI" })));
+          } else {
+            // Extract JSON from response
+            let jsonStr = textBlock.text.trim();
+            const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+            if (jsonMatch) jsonStr = jsonMatch[1].trim();
+            controller.enqueue(new TextEncoder().encode(JSON.stringify({ plan: JSON.parse(jsonStr) })));
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : "Generation failed";
+          controller.enqueue(new TextEncoder().encode(JSON.stringify({ error: msg })));
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("Generate error:", error);
     return NextResponse.json(
