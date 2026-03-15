@@ -5,8 +5,8 @@ let client: Client | null = null;
 function getDb(): Client {
   if (!client) {
     client = createClient({
-      url: process.env.TURSO_DATABASE_URL || "file:db/artspark.db",
-      authToken: process.env.TURSO_AUTH_TOKEN,
+      url: (process.env.TURSO_DATABASE_URL || "file:db/artspark.db").trim(),
+      authToken: process.env.TURSO_AUTH_TOKEN?.trim(),
     });
   }
   return client;
